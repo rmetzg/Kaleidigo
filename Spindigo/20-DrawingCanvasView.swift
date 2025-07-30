@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct DrawingCanvasView: View {
     @Environment(\.scenePhase) private var scenePhase
 

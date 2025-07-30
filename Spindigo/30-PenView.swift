@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct PenView: View {
     @Binding var penSize: CGFloat
     @Binding var displayFrameRate: Int

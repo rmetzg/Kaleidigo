@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+
 struct OrbitingPath {
     let points: [CGPoint]
     let creationTime: Date
