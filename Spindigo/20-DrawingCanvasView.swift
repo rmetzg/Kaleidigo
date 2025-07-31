@@ -22,6 +22,9 @@ struct DrawingCanvasView: View {
     @State private var fingerIsDown = false
     @State private var fingerStartTime: Date = .distantPast
     @State private var fingerLocation: CGPoint? = nil
+    
+    @State private var canvasImage: UIImage? = nil
+    @State private var fingerLiftTime: Date = .distantPast
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -160,6 +163,19 @@ struct DrawingCanvasView: View {
                             .fill(Color.white)
                             .frame(width: activeDiameter, height: activeDiameter)
                             .position(center)
+                        
+                        // Canvas image, rotated by time-based angle
+                        if let image = canvasImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .frame(width: activeDiameter, height: activeDiameter)
+                                .rotationEffect(.degrees(angleSince(.distantPast, now: currentTime))) // spins continuously
+                                .position(center)
+                                .mask(
+                                    Circle()
+                                        .frame(width: activeDiameter, height: activeDiameter)
+                                )
+                        }
 
                         Circle()
                             .fill(Color.black)
@@ -172,22 +188,25 @@ struct DrawingCanvasView: View {
                             .position(center)
 
                         ZStack {
-                            ForEach(0..<finishedPaths.count, id: \.self) { i in
-                                let path = finishedPaths[i]
-                                let offset = angleSince(path.creationTime, now: currentTime)
-
-                                Path { p in
-                                    for (index, point) in path.points.enumerated() {
-                                        let rotated = rotate(point, around: center, by: offset)
-                                        if index == 0 {
-                                            p.move(to: rotated)
-                                        } else {
-                                            p.addLine(to: rotated)
-                                        }
-                                    }
-                                }
-                                .stroke(path.color, lineWidth: path.lineWidth)
-                            }
+                            
+                            
+                            
+//                            ForEach(0..<finishedPaths.count, id: \.self) { i in
+//                                let path = finishedPaths[i]
+//                                let offset = angleSince(path.creationTime, now: currentTime)
+//
+//                                Path { p in
+//                                    for (index, point) in path.points.enumerated() {
+//                                        let rotated = rotate(point, around: center, by: offset)
+//                                        if index == 0 {
+//                                            p.move(to: rotated)
+//                                        } else {
+//                                            p.addLine(to: rotated)
+//                                        }
+//                                    }
+//                                }
+//                                .stroke(path.color, lineWidth: path.lineWidth)
+//                            }
 
                             if fingerIsDown {
                                 Path { p in
@@ -241,8 +260,8 @@ struct DrawingCanvasView: View {
                 }
                 .onChange(of: clearTrigger) { _, _ in
                     activePoints.removeAll()
-                    finishedPaths.removeAll()
                     fingerIsDown = false
+                    canvasImage = nil  // ✅ Clear the persistent drawing
                 }
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -260,9 +279,11 @@ struct DrawingCanvasView: View {
                             fingerLocation = nil
                             stopSampleLoop()
 
+                            fingerLiftTime = Date()  // ✅ Freeze canvas rotation at this instant
+
                             let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
-                            let staticPoints = activePoints.map { sample -> CGPoint in
-                                let spinAngle = angleSince(sample.timestamp, now: currentTime)
+                            let rotatedPoints = activePoints.map { sample -> CGPoint in
+                                let spinAngle = angleSince(sample.timestamp, now: fingerLiftTime)  // ✅ Use frozen time
                                 let totalAngle = sample.angleAtZero + spinAngle
                                 return CGPoint(
                                     x: center.x + sample.radius * cos(totalAngle.toRadians()),
@@ -270,19 +291,47 @@ struct DrawingCanvasView: View {
                                 )
                             }
 
-                            finishedPaths.append(
-                                OrbitingPath(
-                                    points: staticPoints,
-                                    creationTime: currentTime,
-                                    color: penColor,
-                                    lineWidth: penSize
-                                )
+                            canvasImage = drawOnImage(
+                                image: canvasImage,
+                                size: canvasSize,
+                                points: rotatedPoints,
+                                color: penColor,
+                                lineWidth: penSize
                             )
 
                             activePoints.removeAll()
                         }
                 )
             }
+        }
+    }
+    
+    private func drawOnImage(
+        image: UIImage?,
+        size: CGSize,
+        points: [CGPoint],
+        color: Color,
+        lineWidth: CGFloat
+    ) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { context in
+            // Draw existing image first
+            image?.draw(in: CGRect(origin: .zero, size: size))
+
+            // Setup stroke
+            let uiColor = UIColor(color)
+            context.cgContext.setStrokeColor(uiColor.cgColor)
+            context.cgContext.setLineWidth(lineWidth)
+            context.cgContext.setLineCap(.round)
+
+            // Draw path
+            guard points.count > 1 else { return }
+            context.cgContext.beginPath()
+            context.cgContext.move(to: points[0])
+            for pt in points.dropFirst() {
+                context.cgContext.addLine(to: pt)
+            }
+            context.cgContext.strokePath()
         }
     }
 
