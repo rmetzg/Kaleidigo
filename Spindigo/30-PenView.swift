@@ -45,28 +45,33 @@ struct PenView: View {
                                 .clipShape(Circle())
                                 .shadow(radius: 5)
                         }
-                        .padding()
                         .accessibilityLabel("Clear canvas")
 
-                        // Spacer between buttons
                         Spacer()
 
                         // Pen Options Button
                         Button {
                             showPenOptionsSheet = true
                         } label: {
-                            Image(systemName: "lineweight")
-                                .font(.system(size: 22))
-                                .padding()
-                                .background(Color.gray.opacity(0.8))
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
+                            ZStack {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.4))
+                                    .frame(width: 54, height: 54)
+                                    .shadow(radius: 5)
+
+                                VStack(spacing: 3) {
+                                    Rectangle().fill(Color.green).frame(width: 20, height: 4)
+                                    Rectangle().fill(Color.blue).frame(width: 20, height: 6)
+                                    Rectangle().fill(Color.red).frame(width: 20, height: 8)
+                                }
+                            }
                         }
-                        .padding()
                         .accessibilityLabel("Pen options")
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, -25)  // 👈 Lower them toward bottom here
                 }
+                .ignoresSafeArea(.keyboard)  // 👈 Prevents keyboard from pushing overlay up
             )
             .alert("Clear canvas?", isPresented: $showClearAlert) {
                 Button("Yes", role: .destructive) {

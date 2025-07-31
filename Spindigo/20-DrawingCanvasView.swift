@@ -25,6 +25,7 @@ struct DrawingCanvasView: View {
     
     @State private var canvasImage: UIImage? = nil
     @State private var fingerLiftTime: Date = .distantPast
+    @State private var strokeStartTime: Date? = nil
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -267,7 +268,9 @@ struct DrawingCanvasView: View {
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
                             if !fingerIsDown {
-                                fingerStartTime = Date()
+                                let now = Date()
+                                fingerStartTime = now
+                                strokeStartTime = now  // ✅ record the "spin phase" anchor
                                 activePoints = []
                                 startSampleLoop()
                             }
@@ -278,28 +281,7 @@ struct DrawingCanvasView: View {
                             fingerIsDown = false
                             fingerLocation = nil
                             stopSampleLoop()
-
-                            fingerLiftTime = Date()  // ✅ Freeze canvas rotation at this instant
-
-                            let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
-                            let rotatedPoints = activePoints.map { sample -> CGPoint in
-                                let spinAngle = angleSince(sample.timestamp, now: fingerLiftTime)  // ✅ Use frozen time
-                                let totalAngle = sample.angleAtZero + spinAngle
-                                return CGPoint(
-                                    x: center.x + sample.radius * cos(totalAngle.toRadians()),
-                                    y: center.y + sample.radius * sin(totalAngle.toRadians())
-                                )
-                            }
-
-                            canvasImage = drawOnImage(
-                                image: canvasImage,
-                                size: canvasSize,
-                                points: rotatedPoints,
-                                color: penColor,
-                                lineWidth: penSize
-                            )
-
-                            activePoints.removeAll()
+                            commitStroke()
                         }
                 )
             }
@@ -309,30 +291,66 @@ struct DrawingCanvasView: View {
     private func drawOnImage(
         image: UIImage?,
         size: CGSize,
+        activeDiameter: CGFloat,
         points: [CGPoint],
         color: Color,
         lineWidth: CGFloat
     ) -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { context in
-            // Draw existing image first
-            image?.draw(in: CGRect(origin: .zero, size: size))
+        let rendererSize = CGSize(width: activeDiameter, height: activeDiameter)
+        let renderer = UIGraphicsImageRenderer(size: rendererSize)
 
-            // Setup stroke
+        return renderer.image { context in
+            // Translate to center drawing in the square
+            let offsetX = (size.width - activeDiameter) / 2
+            let offsetY = (size.height - activeDiameter) / 2
+            let translation = CGAffineTransform(translationX: -offsetX, y: -offsetY)
+            
+            image?.draw(in: CGRect(origin: .zero, size: rendererSize), blendMode: .normal, alpha: 1.0)
+
             let uiColor = UIColor(color)
             context.cgContext.setStrokeColor(uiColor.cgColor)
             context.cgContext.setLineWidth(lineWidth)
             context.cgContext.setLineCap(.round)
 
-            // Draw path
             guard points.count > 1 else { return }
+
             context.cgContext.beginPath()
-            context.cgContext.move(to: points[0])
+            context.cgContext.move(to: points[0].applying(translation))
             for pt in points.dropFirst() {
-                context.cgContext.addLine(to: pt)
+                context.cgContext.addLine(to: pt.applying(translation))
             }
             context.cgContext.strokePath()
         }
+    }
+    
+    private func commitStroke() {
+        let now = Date()
+        let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
+        let activeDiameter = min(canvasSize.width, canvasSize.height) - 10
+
+        // ⏸️ Freeze the canvas angle at stroke end
+        let rotationAtLift = angleSince(.distantPast, now: now)
+
+        // 🎯 Undo that rotation from each point
+        let renderedPoints = activePoints.map { sample in
+            let angleNow = sample.angleAtZero + angleSince(sample.timestamp, now: now)
+            let correctedAngle = angleNow - rotationAtLift  // ✅ remove current spin
+            return CGPoint(
+                x: center.x + sample.radius * cos(correctedAngle.toRadians()),
+                y: center.y + sample.radius * sin(correctedAngle.toRadians())
+            )
+        }
+
+        canvasImage = drawOnImage(
+            image: canvasImage,
+            size: canvasSize,
+            activeDiameter: activeDiameter,
+            points: renderedPoints,
+            color: penColor,
+            lineWidth: penSize
+        )
+
+        activePoints.removeAll()
     }
 
     private func startRenderLoop() {
