@@ -26,6 +26,9 @@ struct DrawingCanvasView: View {
     @State private var canvasImage: UIImage? = nil
     @State private var fingerLiftTime: Date = .distantPast
     @State private var strokeStartTime: Date? = nil
+    @State private var canvasHistory: [UIImage] = []
+    @State private var redoStack: [UIImage] = []
+    @State private var isSeededWithBlankImage = false
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -33,6 +36,11 @@ struct DrawingCanvasView: View {
     @Binding var penSize: CGFloat
     @Binding var penColor: Color
     @Binding var isActive: Bool
+    @Binding var undoTrigger: Bool
+    @Binding var redoTrigger: Bool
+    @Binding var canUndo: Bool
+    @Binding var canRedo: Bool
+    
 
     struct PolarSample {
         let radius: CGFloat
@@ -54,16 +62,26 @@ struct DrawingCanvasView: View {
             
             VStack(spacing: 12) {
                 VStack(spacing: 4) {
-                    Text("RPM")
+//                    Text("RPM")
+//                        .font(.headline)
+//                        .foregroundStyle(.white)
+                    
+                    Text("Speed: \(Int(spinRPM)) RPM")
                         .font(.headline)
-                        .foregroundStyle(.black)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.indigo)
+                        )
 
                     HStack {
                         Button(action: {
                             spinRPM = max(spinRPM - 1, -240)
                         }) {
                             Text("-240")
-                                .font(.caption)
+                                .font(.headline)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -79,7 +97,7 @@ struct DrawingCanvasView: View {
                             spinRPM = min(spinRPM + 1, 240)
                         }) {
                             Text("240")
-                                .font(.caption)
+                                .font(.headline)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -90,22 +108,30 @@ struct DrawingCanvasView: View {
                         }
                     }
 
-                    Text("\(Int(spinRPM)) RPM")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                   
                 }
 
                 VStack(spacing: 4) {
-                    Text("Frame Rate")
+//                    Text("Frame Rate")
+//                        .font(.headline)
+//                        .foregroundStyle(.white)
+                    
+                    Text("Frame Rate: \(displayFrameRate) fps")
                         .font(.headline)
-                        .foregroundStyle(.black)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.indigo)
+                        )
 
                     HStack {
                         Button(action: {
                             displayFrameRate = max(displayFrameRate - 1, 1)
                         }) {
                             Text("1")
-                                .font(.caption)
+                                .font(.headline)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -130,7 +156,7 @@ struct DrawingCanvasView: View {
                             displayFrameRate = min(displayFrameRate + 1, 120)
                         }) {
                             Text("120")
-                                .font(.caption)
+                                .font(.headline)
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
@@ -141,14 +167,13 @@ struct DrawingCanvasView: View {
                         }
                     }
 
-                    Text("\(displayFrameRate) fps")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                    
                 }
             }
             .padding(.horizontal)
-            .padding(.top, 10)
-            .background(Color(white: 0.95))
+            .padding(.top, 5)
+            .padding(.bottom, 15)
+            .background(Color(.darkGray))
             
             GeometryReader { geo in
                 let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
@@ -156,7 +181,7 @@ struct DrawingCanvasView: View {
 
                 ZStack {
                     // Outer background (entire screen)
-                    Color.black.ignoresSafeArea()
+                    Color.indigo.ignoresSafeArea()
 
                     // White drawing area inside the circle only
                     ZStack {
@@ -237,6 +262,16 @@ struct DrawingCanvasView: View {
                 .onAppear {
                     canvasSize = geo.size
                     if isActive { startRenderLoop() }
+
+                    if canvasHistory.isEmpty {
+                        let blank = UIGraphicsImageRenderer(size: geo.size).image { ctx in
+                            ctx.cgContext.setFillColor(UIColor.clear.cgColor)
+                            ctx.cgContext.fill(CGRect(origin: .zero, size: geo.size))
+                        }
+                        canvasHistory.append(blank)
+                    }
+
+                    canUndo = canvasHistory.count > 1
                 }
                 .onDisappear {
                     stopRenderLoop()
@@ -260,9 +295,40 @@ struct DrawingCanvasView: View {
                     }
                 }
                 .onChange(of: clearTrigger) { _, _ in
+                    if let currentImage = canvasImage {
+                        canvasHistory.append(currentImage)
+                        canUndo = true
+                    }
+
+                    canvasImage = nil
                     activePoints.removeAll()
                     fingerIsDown = false
-                    canvasImage = nil  // ✅ Clear the persistent drawing
+                    redoStack.removeAll()
+                    canRedo = false
+                }
+
+                .onChange(of: undoTrigger) { _, _ in
+                    if let current = canvasImage {
+                        redoStack.append(current)
+                    }
+                    if let last = canvasHistory.popLast() {
+                        canvasImage = last
+                    } else {
+                        canvasImage = nil
+                    }
+                    canUndo = !canvasHistory.isEmpty
+                    canRedo = !redoStack.isEmpty
+                }
+
+                .onChange(of: redoTrigger) { _, _ in
+                    if let redoImage = redoStack.popLast() {
+                        if let current = canvasImage {
+                            canvasHistory.append(current)
+                        }
+                        canvasImage = redoImage
+                    }
+                    canUndo = !canvasHistory.isEmpty
+                    canRedo = !redoStack.isEmpty
                 }
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -328,18 +394,24 @@ struct DrawingCanvasView: View {
         let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
         let activeDiameter = min(canvasSize.width, canvasSize.height) - 10
 
-        // ⏸️ Freeze the canvas angle at stroke end
         let rotationAtLift = angleSince(.distantPast, now: now)
 
-        // 🎯 Undo that rotation from each point
         let renderedPoints = activePoints.map { sample in
             let angleNow = sample.angleAtZero + angleSince(sample.timestamp, now: now)
-            let correctedAngle = angleNow - rotationAtLift  // ✅ remove current spin
+            let correctedAngle = angleNow - rotationAtLift
             return CGPoint(
                 x: center.x + sample.radius * cos(correctedAngle.toRadians()),
                 y: center.y + sample.radius * sin(correctedAngle.toRadians())
             )
         }
+
+        // 🧠 Save current canvas before modifying it
+        if let currentImage = canvasImage {
+            canvasHistory.append(currentImage)
+        }
+        redoStack.removeAll()
+        canUndo = !canvasHistory.isEmpty
+        canRedo = false
 
         canvasImage = drawOnImage(
             image: canvasImage,

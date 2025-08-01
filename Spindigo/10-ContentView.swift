@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var spinRPM = 36.0
     @State private var clearTrigger = false
     @State private var penSize: CGFloat = 10.0
+    @State private var redoStack: [UIImage] = []
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -22,7 +23,8 @@ struct ContentView: View {
                 displayFrameRate: $displayFrameRate,
                 spinRPM: $spinRPM,
                 clearTrigger: $clearTrigger,
-                isActive: .constant(selectedTab == 0)
+                isActive: .constant(selectedTab == 0),
+                redoStack: $redoStack
             )
             .tabItem {
                 Label("Canvas", systemImage: "pencil.tip")

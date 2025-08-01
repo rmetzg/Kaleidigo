@@ -14,10 +14,18 @@ struct PenView: View {
     @Binding var spinRPM: Double
     @Binding var clearTrigger: Bool
     @Binding var isActive: Bool
+    @Binding var redoStack: [UIImage]
+    
+//    @State private var redoStack: [UIImage] = []
+    
 
     @State private var showClearAlert = false
     @State private var showPenOptionsSheet = false
     @State private var penColor: Color = .blue
+    @State private var undoTrigger = false
+    @State private var redoTrigger = false
+    @State private var canUndo = false
+    @State private var canRedo = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,7 +35,11 @@ struct PenView: View {
                 clearTrigger: $clearTrigger,
                 penSize: $penSize,
                 penColor: $penColor,
-                isActive: $isActive
+                isActive: $isActive,
+                undoTrigger: $undoTrigger,
+                redoTrigger: $redoTrigger,
+                canUndo: $canUndo,
+                canRedo: $canRedo
             )
             .overlay(
                 VStack {
@@ -47,6 +59,45 @@ struct PenView: View {
                         }
                         .accessibilityLabel("Clear canvas")
 
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        
+                        // Undo Button
+                        Button {
+                            if canUndo { undoTrigger.toggle() }
+                        } label: {
+                            Image(systemName: "arrow.uturn.backward")
+                                .font(.system(size: 22))
+                                .padding()
+                                .background(Color.gray.opacity(0.8))
+                                .foregroundColor(canUndo ? .white : .gray)
+                                .disabled(!canUndo)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        }
+                        .accessibilityLabel("Undo last stroke")
+
+                        // Redo Button
+                        Button {
+                            if canRedo { redoTrigger.toggle() }
+                        } label: {
+                            Image(systemName: "arrow.uturn.forward")
+                                .font(.system(size: 22))
+                                .padding()
+                                .background(Color.gray.opacity(0.8))
+                                .foregroundColor(canRedo ? .white : .gray)
+                                .disabled(redoStack.isEmpty)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        }
+                        .accessibilityLabel("Redo last stroke")
+                        
                         Spacer()
 
                         // Pen Options Button
