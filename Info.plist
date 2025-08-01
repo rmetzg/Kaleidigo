@@ -17,5 +17,9 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Spindigo needs your permission to save drawings to your photo library.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Spindigo needs your permission to load drawings from your photo library.</string>
 </dict>
 </plist>

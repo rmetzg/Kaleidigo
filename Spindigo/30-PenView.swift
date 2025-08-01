@@ -26,6 +26,9 @@ struct PenView: View {
     @State private var redoTrigger = false
     @State private var canUndo = false
     @State private var canRedo = false
+    @State private var saveImageTrigger = false
+    @State private var loadImageTrigger = false
+    @State private var showSaveAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,12 +42,42 @@ struct PenView: View {
                 undoTrigger: $undoTrigger,
                 redoTrigger: $redoTrigger,
                 canUndo: $canUndo,
-                canRedo: $canRedo
+                canRedo: $canRedo,
+                saveImageTrigger: $saveImageTrigger,
+                loadImageTrigger: $loadImageTrigger
             )
             .overlay(
                 VStack {
                     Spacer()
                     HStack {
+                        
+                        Button {
+                            showSaveAlert = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 22))
+                                .padding()
+                                .background(Color.gray.opacity(0.8))
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        }
+                        .accessibilityLabel("Save to Photos")
+                        
+                        Button {
+                            loadImageTrigger.toggle()
+                        } label: {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 22))
+                                .padding()
+                                .background(Color.gray.opacity(0.8))
+                                .foregroundColor(.white)
+                                .clipShape(Circle())
+                                .shadow(radius: 5)
+                        }
+                        
+                        Spacer()
+                        
                         // Trash (Clear) Button
                         Button {
                             showClearAlert = true
@@ -127,6 +160,12 @@ struct PenView: View {
             .alert("Clear canvas?", isPresented: $showClearAlert) {
                 Button("Yes", role: .destructive) {
                     clearTrigger.toggle()
+                }
+                Button("No", role: .cancel) {}
+            }
+            .alert("Do you want to save the canvas image to Photos?", isPresented: $showSaveAlert) {
+                Button("Yes") {
+                    saveImageTrigger.toggle()
                 }
                 Button("No", role: .cancel) {}
             }

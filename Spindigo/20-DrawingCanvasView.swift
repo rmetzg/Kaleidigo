@@ -29,6 +29,8 @@ struct DrawingCanvasView: View {
     @State private var canvasHistory: [UIImage] = []
     @State private var redoStack: [UIImage] = []
     @State private var isSeededWithBlankImage = false
+    @State private var showPhotoPicker = false
+    @State private var photoPickerImage: UIImage?
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -40,6 +42,8 @@ struct DrawingCanvasView: View {
     @Binding var redoTrigger: Bool
     @Binding var canUndo: Bool
     @Binding var canRedo: Bool
+    @Binding var saveImageTrigger: Bool
+    @Binding var loadImageTrigger: Bool
     
 
     struct PolarSample {
@@ -329,6 +333,29 @@ struct DrawingCanvasView: View {
                     }
                     canUndo = !canvasHistory.isEmpty
                     canRedo = !redoStack.isEmpty
+                }
+                .onChange(of: saveImageTrigger) { _, _ in
+                    if let image = canvasImage {
+                        PhotoLibraryManager.saveImageToPhotos(image) { success in
+                            // Optionally show success/failure alert here
+                            print("Save to photos: \(success)")
+                        }
+                    }
+                }
+                .onChange(of: loadImageTrigger) { _, _ in
+                    showPhotoPicker = true
+                }
+                .sheet(isPresented: $showPhotoPicker) {
+                    PhotoPicker(image: $photoPickerImage)
+                        .onDisappear {
+                            if let loadedImage = photoPickerImage {
+                                canvasImage = loadedImage
+                                canvasHistory.append(loadedImage)
+                                canUndo = true
+                                redoStack.removeAll()
+                                canRedo = false
+                            }
+                        }
                 }
                 .gesture(
                     DragGesture(minimumDistance: 0)
