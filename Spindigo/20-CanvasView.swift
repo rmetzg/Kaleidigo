@@ -1,5 +1,5 @@
 //
-//  DrawingCanvasView.swift
+//  CanvasView.swift
 //  Spindigo
 //
 //  Created by Alan Metzger on 7/28/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-struct DrawingCanvasView: View {
+struct CanvasView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var canvasSize: CGSize = .zero
@@ -54,21 +54,9 @@ struct DrawingCanvasView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // ✅ Slider at the top
-//            VStack {
-//                Text("Spin Rate: \(Int(spinRPM)) RPM")
-//                    .font(.caption)
-//                    .padding(.top, 6)
-//                Slider(value: $spinRPM, in: -120...120, step: 1)
-//                    .padding([.horizontal, .bottom], 10)
-//            }
-//            .background(Color(white: 0.95))
             
             VStack(spacing: 12) {
                 VStack(spacing: 4) {
-//                    Text("RPM")
-//                        .font(.headline)
-//                        .foregroundStyle(.white)
                     
                     Text("Speed: \(Int(spinRPM)) RPM")
                         .font(.headline)

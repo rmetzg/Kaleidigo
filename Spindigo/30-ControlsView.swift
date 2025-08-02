@@ -1,5 +1,5 @@
 //
-//  PenView.swift
+//  ControlsView.swift
 //  Spindigo
 //
 //  Created by Alan Metzger on 7/28/25.
@@ -8,7 +8,7 @@
 import SwiftUI
 
 
-struct PenView: View {
+struct ControlsView: View {
     @Binding var penSize: CGFloat
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -32,7 +32,8 @@ struct PenView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            DrawingCanvasView(
+            
+            CanvasView(
                 displayFrameRate: $displayFrameRate,
                 spinRPM: $spinRPM,
                 clearTrigger: $clearTrigger,
