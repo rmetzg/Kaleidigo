@@ -194,9 +194,11 @@ struct DrawingCanvasView: View {
                             .frame(width: activeDiameter, height: activeDiameter)
                             .position(center)
                         
+                        
                         // Canvas image, rotated by time-based angle
                         if let image = canvasImage {
                             Image(uiImage: image)
+                            
                                 .resizable()
                                 .frame(width: activeDiameter, height: activeDiameter)
                                 .rotationEffect(.degrees(angleSince(.distantPast, now: currentTime))) // spins continuously
@@ -206,6 +208,20 @@ struct DrawingCanvasView: View {
                                         .frame(width: activeDiameter, height: activeDiameter)
                                 )
                         }
+                        
+                        // 🧭 8 spinning radial guides
+                        Path { path in
+                            let radius = activeDiameter / 2 * 0.5  // half-radius
+                            for i in 0..<8 {
+                                let angle = CGFloat(i) * .pi / 4  // 45°
+                                let dx = radius * cos(angle)
+                                let dy = radius * sin(angle)
+                                path.move(to: center)
+                                path.addLine(to: CGPoint(x: center.x + dx, y: center.y + dy))
+                            }
+                        }
+                        .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
+                        .rotationEffect(.degrees(angleSince(.distantPast, now: currentTime)))
 
                         Circle()
                             .fill(Color.black)
@@ -218,25 +234,6 @@ struct DrawingCanvasView: View {
                             .position(center)
 
                         ZStack {
-                            
-                            
-                            
-//                            ForEach(0..<finishedPaths.count, id: \.self) { i in
-//                                let path = finishedPaths[i]
-//                                let offset = angleSince(path.creationTime, now: currentTime)
-//
-//                                Path { p in
-//                                    for (index, point) in path.points.enumerated() {
-//                                        let rotated = rotate(point, around: center, by: offset)
-//                                        if index == 0 {
-//                                            p.move(to: rotated)
-//                                        } else {
-//                                            p.addLine(to: rotated)
-//                                        }
-//                                    }
-//                                }
-//                                .stroke(path.color, lineWidth: path.lineWidth)
-//                            }
 
                             if fingerIsDown {
                                 Path { p in

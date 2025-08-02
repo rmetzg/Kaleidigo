@@ -27,30 +27,18 @@ struct ContentView: View {
                 redoStack: $redoStack
             )
             .tabItem {
-                Label("Canvas", systemImage: "pencil.tip")
+                Label("Spindigo", systemImage: "pencil.tip")
             }
             .tag(0)
 
-//            SpeedSettingsView(
-//                displayFrameRate: $displayFrameRate,
-//                spinRPM: $spinRPM
-//            )
-//            .tabItem {
-//                Label("Speed", systemImage: "speedometer")
-//            }
-//            .tag(1)
 
-            SaveView()
-                .tabItem {
-                    Label("Save", systemImage: "square.and.arrow.down")
-                }
-            .tag(2)
+
+//            SaveView()
+//                .tabItem {
+//                    Label("Save", systemImage: "square.and.arrow.down")
+//                }
+//            .tag(2)
         }
     }
 }
-
-//#Preview {
-//    ContentView()
-//}
-
 
