@@ -32,6 +32,8 @@ struct CanvasView: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerImage: UIImage?
     @State private var showAbout = false
+    
+    @State private var animationManager = AnimationCycleManager()
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -62,24 +64,69 @@ struct CanvasView: View {
                         .font(.custom("Marker Felt", size: 54))
                         .foregroundColor(.yellow)
                         .padding(.top, 4)
+
                     Spacer()
+
+                 
+                        Spacer()
+                    HStack(spacing: 12) {
+                        Button("Zero Spd") {
+                            cancelAnimationIfActive()
+                            spinRPM = 0
+                        }
+                        .font(.custom("Marker Felt", size: 32))
+                        .foregroundColor(Color.spindigoOrange)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.spindigoAccent)
+                        )
+                        Button("Animate") {
+                            if !animationManager.isAnimating {
+                                animationManager.startCycle(currentRPM: spinRPM, currentFPS: displayFrameRate)
+                            } else {
+                                animationManager.advanceCycle()
+                            }
+                            
+                            if animationManager.shouldRestoreOriginal {
+                                spinRPM = animationManager.originalRPM
+                                displayFrameRate = animationManager.originalFPS
+                            } else if let preset = animationManager.currentPreset {
+                                spinRPM = preset.0
+                                displayFrameRate = preset.1
+                            }
+                        }
+                        .font(.custom("Marker Felt", size: 32))
+                        .foregroundColor(Color.spindigoOrange)
+                        .animatedSpindigoGlow(animationManager.isAnimating)
+                    }
+                    
                 }
-                .padding(.horizontal)
+            //    .padding(.horizontal)
 
                 HStack(spacing: 12) {
                     Text("Speed: \(Int(spinRPM)) RPM")
                         .foregroundColor(.white)
                         .font(.title3)
-                        .frame(width: 140, alignment: .leading)
+                        .frame(width: 150, alignment: .leading)
 
-                    Slider(value: $spinRPM, in: -240...240, step: 1)
-                    
+                    Slider(value: Binding(
+                        get: { spinRPM },
+                        set: {
+                            cancelAnimationIfActive()
+                            spinRPM = $0
+                        }
+                    ), in: -240...240, step: 1)
+
                     Button("–") {
+                        cancelAnimationIfActive()
                         spinRPM = max(spinRPM - 1, -240)
                     }
                     .controlMiniButtonStyle()
 
                     Button("+") {
+                        cancelAnimationIfActive()
                         spinRPM = min(spinRPM + 1, 240)
                     }
                     .controlMiniButtonStyle()
@@ -89,13 +136,14 @@ struct CanvasView: View {
                     Text("Frame: \(displayFrameRate) fps")
                         .foregroundColor(.white)
                         .font(.title3)
-                        .frame(width: 140, alignment: .leading)
+                        .frame(width: 150, alignment: .leading)
 
                     Slider(value: Binding(
                         get: { Double(displayFrameRate) },
                         set: {
                             let newValue = Int($0)
                             if newValue != displayFrameRate {
+                                cancelAnimationIfActive()
                                 displayFrameRate = newValue
                                 startRenderLoop()
                             }
@@ -103,12 +151,14 @@ struct CanvasView: View {
                     ), in: 1...120, step: 1)
 
                     Button("–") {
+                        cancelAnimationIfActive()
                         displayFrameRate = max(displayFrameRate - 1, 1)
                     }
                     .controlMiniButtonStyle()
 
                     Button("+") {
                         displayFrameRate = min(displayFrameRate + 1, 120)
+                        cancelAnimationIfActive()
                     }
                     .controlMiniButtonStyle()
                 }
@@ -455,6 +505,83 @@ struct CanvasView: View {
             y: center.y + r * sin(angle)
         )
     }
+    
+    private func cancelAnimationIfActive() {
+        if animationManager.isAnimating {
+            animationManager = AnimationCycleManager() // Reset to defaults
+        }
+    }
 }
+
+struct AnimationCycleManager {
+    let presets: [(rpm: Double, fps: Int)] = [
+        (240, 10),
+        (140, 18),
+        (190, 22)
+    ]
+    
+    private(set) var originalRPM: Double = 0
+    private(set) var originalFPS: Int = 0
+    private(set) var currentIndex: Int = -1  // -1 means "off"
+    
+    mutating func startCycle(currentRPM: Double, currentFPS: Int) {
+        originalRPM = currentRPM
+        originalFPS = currentFPS
+        currentIndex = 0
+    }
+    
+    mutating func advanceCycle() {
+        if currentIndex >= 0 && currentIndex < presets.count - 1 {
+            currentIndex += 1
+        } else {
+            currentIndex = -1 // exit animation mode
+        }
+    }
+    
+    var isAnimating: Bool {
+        currentIndex != -1
+    }
+    
+    var currentPreset: (Double, Int)? {
+        guard isAnimating else { return nil }
+        return presets[currentIndex]
+    }
+    
+    var shouldRestoreOriginal: Bool {
+        currentIndex == -1
+    }
+}
+
+struct AnimateButtonBackground: ViewModifier {
+    @State private var animate = false
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(animate ? Color.spindigoAccent : Color.darkIndigo)
+                    .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: animate)
+            )
+            .onAppear {
+                animate = true
+            }
+    }
+}
+
+extension View {
+    func animatedSpindigoGlow(_ active: Bool) -> some View {
+        self
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(active ? Color.clear : Color.spindigoAccent)
+                    .animation(active ? .easeInOut(duration: 1.75).repeatForever(autoreverses: true) : .default, value: active)
+            )
+    }
+}
+
 
 

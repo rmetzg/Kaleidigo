@@ -38,6 +38,8 @@ extension Color {
     
     static let darkIndigo = Color(red: 0x2A / 255.0, green: 0x0E / 255.0, blue: 0x5C / 255.0)
     
+    static let spindigoOrange = Color(red: 0xFF / 255.0, green: 0x6A / 255.0, blue: 0x00 / 255.0)
+    
 }
 
 
