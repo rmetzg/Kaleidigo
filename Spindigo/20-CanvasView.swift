@@ -31,6 +31,7 @@ struct CanvasView: View {
     @State private var isSeededWithBlankImage = false
     @State private var showPhotoPicker = false
     @State private var photoPickerImage: UIImage?
+    @State private var showAbout = false
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -55,117 +56,68 @@ struct CanvasView: View {
     var body: some View {
         VStack(spacing: 0) {
             
-            VStack(spacing: 12) {
-                VStack(spacing: 4) {
-                    
+            VStack(spacing: 8) {
+                HStack {
+                    Text("Spindigo")
+                        .font(.custom("Marker Felt", size: 54))
+                        .foregroundColor(.yellow)
+                        .padding(.top, 4)
+                    Spacer()
+                }
+                .padding(.horizontal)
+
+                HStack(spacing: 12) {
                     Text("Speed: \(Int(spinRPM)) RPM")
-                        .font(.headline)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.indigo)
-                        )
+                        .font(.title3)
+                        .frame(width: 140, alignment: .leading)
 
-                    HStack {
-                        Button(action: {
-                            spinRPM = max(spinRPM - 1, -240)
-                        }) {
-                            Text("-240")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.blue)
-                                )
-                        }
-
-                        Slider(value: $spinRPM, in: -240...240, step: 1)
-
-                        Button(action: {
-                            spinRPM = min(spinRPM + 1, 240)
-                        }) {
-                            Text("240")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.blue)
-                                )
-                        }
+                    Slider(value: $spinRPM, in: -240...240, step: 1)
+                    
+                    Button("–") {
+                        spinRPM = max(spinRPM - 1, -240)
                     }
+                    .controlMiniButtonStyle()
 
-                   
+                    Button("+") {
+                        spinRPM = min(spinRPM + 1, 240)
+                    }
+                    .controlMiniButtonStyle()
                 }
 
-                VStack(spacing: 4) {
-//                    Text("Frame Rate")
-//                        .font(.headline)
-//                        .foregroundStyle(.white)
-                    
-                    Text("Frame Rate: \(displayFrameRate) fps")
-                        .font(.headline)
+                HStack(spacing: 12) {
+                    Text("Frame: \(displayFrameRate) fps")
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(Color.indigo)
-                        )
+                        .font(.title3)
+                        .frame(width: 140, alignment: .leading)
 
-                    HStack {
-                        Button(action: {
-                            displayFrameRate = max(displayFrameRate - 1, 1)
-                        }) {
-                            Text("1")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.blue)
-                                )
-                        }
-
-                        Slider(value: Binding(
-                            get: { Double(displayFrameRate) },
-                            set: {
-                                let newValue = Int($0)
-                                if newValue != displayFrameRate {
-                                    displayFrameRate = newValue
-                                    startRenderLoop()
-                                }
+                    Slider(value: Binding(
+                        get: { Double(displayFrameRate) },
+                        set: {
+                            let newValue = Int($0)
+                            if newValue != displayFrameRate {
+                                displayFrameRate = newValue
+                                startRenderLoop()
                             }
-                        ), in: 1...120, step: 1)
-
-                        Button(action: {
-                            displayFrameRate = min(displayFrameRate + 1, 120)
-                        }) {
-                            Text("120")
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color.blue)
-                                )
                         }
-                    }
+                    ), in: 1...120, step: 1)
 
-                    
+                    Button("–") {
+                        displayFrameRate = max(displayFrameRate - 1, 1)
+                    }
+                    .controlMiniButtonStyle()
+
+                    Button("+") {
+                        displayFrameRate = min(displayFrameRate + 1, 120)
+                    }
+                    .controlMiniButtonStyle()
                 }
             }
             .padding(.horizontal)
-            .padding(.top, 5)
-            .padding(.bottom, 15)
-            .background(Color(.darkGray))
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .background(Color.darkIndigo)
+            
             
             GeometryReader { geo in
                 let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
@@ -173,7 +125,7 @@ struct CanvasView: View {
 
                 ZStack {
                     // Outer background (entire screen)
-                    Color.indigo.ignoresSafeArea()
+                    Color.darkIndigo.ignoresSafeArea()
 
                     // White drawing area inside the circle only
                     ZStack {
@@ -364,7 +316,26 @@ struct CanvasView: View {
                 )
             }
         }
+        .sheet(isPresented: $showAbout) {
+            VStack(spacing: 20) {
+                Text("Spindigo")
+                    .font(.largeTitle.bold())
+                Text("Version 1.0\n\nCreated by Alan Metzger\n\nSpindigo lets you draw on a spinning canvas with dynamic control of speed and frame rate.")
+                    .multilineTextAlignment(.center)
+                    .padding()
+
+                Button("Close") {
+                    showAbout = false
+                }
+                .padding()
+                .background(Color.darkIndigo)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            .padding()
+        }
     }
+    
     
     private func drawOnImage(
         image: UIImage?,
