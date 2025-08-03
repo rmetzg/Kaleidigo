@@ -51,6 +51,33 @@ struct ControlsView: View {
             .overlay(
                 VStack {
                     Spacer()
+                    
+                    GeometryReader { geo in
+                        HStack(spacing: 0) {
+                            Text("")
+                                .frame(width: geo.size.width * 0.033, alignment: .center)
+                            
+                            Text("Save      Load")
+                                .frame(width: geo.size.width * 0.14, alignment: .center)
+                            
+                            Text(" ")
+                                .frame(width: geo.size.width * 0.56, alignment: .center)
+
+                            Text("Undo     Redo")
+                                .frame(width: geo.size.width * 0.16, alignment: .center)
+                            
+                            Text(" ")
+                                .frame(width: geo.size.width * 0.008, alignment: .center)
+
+                            Text("Colors")
+                                .frame(width: geo.size.width * 0.08, alignment: .center)
+                            
+                            Text("")
+                                .frame(width: geo.size.width * 0.03, alignment: .center)
+                        }
+                    }
+                    .frame(height: 14)  // Optional: limit height
+                    
                     HStack {
                         
                         Button {
@@ -102,6 +129,9 @@ struct ControlsView: View {
                         Spacer()
                         Spacer()
                         Spacer()
+                        Spacer()
+                        Spacer()
+                        Spacer()
                         
                         // Undo Button
                         Button {
@@ -133,7 +163,7 @@ struct ControlsView: View {
                         }
                         .accessibilityLabel("Redo last stroke")
                         
-                        Spacer()
+                  //      Spacer()
 
                         // Pen Options Button
                         Button {

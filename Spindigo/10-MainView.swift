@@ -34,21 +34,6 @@ struct MainView: View {
                 isActive: $isActive,
                 redoStack: $redoStack
             )
-
-//            CanvasView(
-//                displayFrameRate: $displayFrameRate,
-//                spinRPM: $spinRPM,
-//                clearTrigger: $clearTrigger,
-//                penSize: $penSize,
-//                penColor: $penColor,
-//                isActive: $isActive,
-//                undoTrigger: $undoTrigger,
-//                redoTrigger: $redoTrigger,
-//                canUndo: $canUndo,
-//                canRedo: $canRedo,
-//                saveImageTrigger: $saveImageTrigger,
-//                loadImageTrigger: $loadImageTrigger
-//            )
         }
     }
 }
