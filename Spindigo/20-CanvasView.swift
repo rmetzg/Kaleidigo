@@ -40,6 +40,7 @@ struct CanvasView: View {
     @Binding var clearTrigger: Bool
     @Binding var penSize: CGFloat
     @Binding var penColor: Color
+    @Binding var canvasBackgroundColor: Color
     @Binding var isActive: Bool
     @Binding var undoTrigger: Bool
     @Binding var redoTrigger: Bool
@@ -57,332 +58,156 @@ struct CanvasView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            
-            VStack(spacing: 8) {
-                HStack {
-                    Text("Spindigo")
-                        .font(.custom("Marker Felt", size: 54))
-                        .foregroundColor(.yellow)
-                        .padding(.top, 4)
+            TopControlPanel(
+                spinRPM: $spinRPM,
+                displayFrameRate: $displayFrameRate,
+                cancelAnimation: cancelAnimationIfActive,
+                animationManager: $animationManager
+            )
 
-                    Spacer()
+            CanvasDrawingArea(
+                canvasSize: $canvasSize,
+                canvasImage: $canvasImage,
+                activePoints: $activePoints,
+                fingerIsDown: $fingerIsDown,
+                fingerLocation: $fingerLocation,
+                currentTime: $currentTime,
+                penSize: penSize,
+                penColor: penColor,
+                canvasBackgroundColor: canvasBackgroundColor,
+                spinRPM: spinRPM
+            )
+            .onAppear {
+                if isActive { startRenderLoop() }
 
-                 
-                        Spacer()
-                    HStack(spacing: 12) {
-                        Button("Zero Spd") {
-                            cancelAnimationIfActive()
-                            spinRPM = 0
-                        }
-                        .font(.custom("Marker Felt", size: 32))
-                        .foregroundColor(Color.spindigoOrange)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.spindigoAccent)
-                        )
-                        Button("Animate") {
-                            if !animationManager.isAnimating {
-                                animationManager.startCycle(currentRPM: spinRPM, currentFPS: displayFrameRate)
-                            } else {
-                                animationManager.advanceCycle()
-                            }
-                            
-                            if animationManager.shouldRestoreOriginal {
-                                spinRPM = animationManager.originalRPM
-                                displayFrameRate = animationManager.originalFPS
-                            } else if let preset = animationManager.currentPreset {
-                                spinRPM = preset.0
-                                displayFrameRate = preset.1
-                            }
-                        }
-                        .font(.custom("Marker Felt", size: 32))
-                        .foregroundColor(Color.spindigoOrange)
-                        .animatedSpindigoGlow(animationManager.isAnimating)
+                if canvasHistory.isEmpty {
+                    let blank = UIGraphicsImageRenderer(size: canvasSize).image { ctx in
+                        ctx.cgContext.setFillColor(UIColor.clear.cgColor)
+                        ctx.cgContext.fill(CGRect(origin: .zero, size: canvasSize))
                     }
-                    
-                }
-            //    .padding(.horizontal)
-
-                HStack(spacing: 12) {
-                    Text("Speed: \(Int(spinRPM)) RPM")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                        .frame(width: 150, alignment: .leading)
-
-                    Slider(value: Binding(
-                        get: { spinRPM },
-                        set: {
-                            cancelAnimationIfActive()
-                            spinRPM = $0
-                        }
-                    ), in: -240...240, step: 1)
-
-                    Button("–") {
-                        cancelAnimationIfActive()
-                        spinRPM = max(spinRPM - 1, -240)
-                    }
-                    .controlMiniButtonStyle()
-
-                    Button("+") {
-                        cancelAnimationIfActive()
-                        spinRPM = min(spinRPM + 1, 240)
-                    }
-                    .controlMiniButtonStyle()
+                    canvasHistory.append(blank)
                 }
 
-                HStack(spacing: 12) {
-                    Text("Frame: \(displayFrameRate) fps")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                        .frame(width: 150, alignment: .leading)
-
-                    Slider(value: Binding(
-                        get: { Double(displayFrameRate) },
-                        set: {
-                            let newValue = Int($0)
-                            if newValue != displayFrameRate {
-                                cancelAnimationIfActive()
-                                displayFrameRate = newValue
-                                startRenderLoop()
-                            }
-                        }
-                    ), in: 1...120, step: 1)
-
-                    Button("–") {
-                        cancelAnimationIfActive()
-                        displayFrameRate = max(displayFrameRate - 1, 1)
-                    }
-                    .controlMiniButtonStyle()
-
-                    Button("+") {
-                        displayFrameRate = min(displayFrameRate + 1, 120)
-                        cancelAnimationIfActive()
-                    }
-                    .controlMiniButtonStyle()
+                canUndo = canvasHistory.count > 1
+            }
+            .onDisappear {
+                stopRenderLoop()
+                stopSampleLoop()
+            }
+            .onChange(of: displayFrameRate) { _, _ in
+                if isActive {
+                    startRenderLoop()
                 }
             }
-            .padding(.horizontal)
-            .padding(.top, 4)
-            .padding(.bottom, 6)
-            .background(Color.darkIndigo)
-            
-            
-            GeometryReader { geo in
-                let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
-                let activeDiameter = min(geo.size.width, geo.size.height) - 10
-
-                ZStack {
-                    // Outer background (entire screen)
-                    Color.darkIndigo.ignoresSafeArea()
-
-                    // White drawing area inside the circle only
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: activeDiameter, height: activeDiameter)
-                            .position(center)
-                        
-                        
-                        // Canvas image, rotated by time-based angle
-                        if let image = canvasImage {
-                            Image(uiImage: image)
-                            
-                                .resizable()
-                                .frame(width: activeDiameter, height: activeDiameter)
-                                .rotationEffect(.degrees(angleSince(.distantPast, now: currentTime))) // spins continuously
-                                .position(center)
-                                .mask(
-                                    Circle()
-                                        .frame(width: activeDiameter, height: activeDiameter)
-                                )
-                        }
-                        
-                        // 🧭 8 spinning radial guides
-                        Path { path in
-                            let radius = activeDiameter / 2 * 0.5  // half-radius
-                            for i in 0..<8 {
-                                let angle = CGFloat(i) * .pi / 4  // 45°
-                                let dx = radius * cos(angle)
-                                let dy = radius * sin(angle)
-                                path.move(to: center)
-                                path.addLine(to: CGPoint(x: center.x + dx, y: center.y + dy))
-                            }
-                        }
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
-                        .rotationEffect(.degrees(angleSince(.distantPast, now: currentTime)))
-
-                        Circle()
-                            .fill(Color.black)
-                            .frame(width: 5, height: 5)
-                            .position(center)
-
-                        Circle()
-                            .stroke(Color.gray, lineWidth: 1)
-                            .frame(width: activeDiameter, height: activeDiameter)
-                            .position(center)
-
-                        ZStack {
-
-                            if fingerIsDown {
-                                Path { p in
-                                    for (index, polar) in activePoints.enumerated() {
-                                        let rotatedAngle = polar.angleAtZero + angleSince(polar.timestamp, now: currentTime)
-                                        let point = CGPoint(
-                                            x: center.x + polar.radius * cos(rotatedAngle.toRadians()),
-                                            y: center.y + polar.radius * sin(rotatedAngle.toRadians())
-                                        )
-                                        if index == 0 {
-                                            p.move(to: point)
-                                        } else {
-                                            p.addLine(to: point)
-                                        }
-                                    }
-                                }
-                                .stroke(penColor.opacity(0.5), lineWidth: penSize)
-                            }
-                        }
-                        .mask(
-                            Circle()
-                                .frame(width: activeDiameter, height: activeDiameter)
-                                .position(center)
-                        )
-                    }
-                }
-                .onAppear {
-                    canvasSize = geo.size
+            .onChange(of: isActive) { _, newValue in
+                newValue ? startRenderLoop() : stopRenderLoop()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .active:
                     if isActive { startRenderLoop() }
-
-                    if canvasHistory.isEmpty {
-                        let blank = UIGraphicsImageRenderer(size: geo.size).image { ctx in
-                            ctx.cgContext.setFillColor(UIColor.clear.cgColor)
-                            ctx.cgContext.fill(CGRect(origin: .zero, size: geo.size))
-                        }
-                        canvasHistory.append(blank)
-                    }
-
-                    canUndo = canvasHistory.count > 1
-                }
-                .onDisappear {
+                default:
                     stopRenderLoop()
                     stopSampleLoop()
                 }
-                .onChange(of: displayFrameRate) { _, _ in
-                    if isActive {
-                        startRenderLoop()
-                    }
-                }
-                .onChange(of: isActive) { oldValue, newValue in
-                    newValue ? startRenderLoop() : stopRenderLoop()
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    switch newPhase {
-                    case .active:
-                        if isActive { startRenderLoop() }
-                    default:
-                        stopRenderLoop()
-                        stopSampleLoop()
-                    }
-                }
-                .onChange(of: clearTrigger) { _, _ in
-                    if let currentImage = canvasImage {
-                        canvasHistory.append(currentImage)
-                        canUndo = true
-                    }
-
-                    canvasImage = nil
-                    activePoints.removeAll()
-                    fingerIsDown = false
-                    redoStack.removeAll()
-                    canRedo = false
-                }
-
-                .onChange(of: undoTrigger) { _, _ in
-                    if let current = canvasImage {
-                        redoStack.append(current)
-                    }
-                    if let last = canvasHistory.popLast() {
-                        canvasImage = last
-                    } else {
-                        canvasImage = nil
-                    }
-                    canUndo = !canvasHistory.isEmpty
-                    canRedo = !redoStack.isEmpty
-                }
-
-                .onChange(of: redoTrigger) { _, _ in
-                    if let redoImage = redoStack.popLast() {
-                        if let current = canvasImage {
-                            canvasHistory.append(current)
-                        }
-                        canvasImage = redoImage
-                    }
-                    canUndo = !canvasHistory.isEmpty
-                    canRedo = !redoStack.isEmpty
-                }
-                .onChange(of: saveImageTrigger) { _, _ in
-                    if let image = canvasImage {
-                        PhotoLibraryManager.saveImageToPhotos(image) { success in
-                            // Optionally show success/failure alert here
-                            print("Save to photos: \(success)")
-                        }
-                    }
-                }
-                .onChange(of: loadImageTrigger) { _, _ in
-                    showPhotoPicker = true
-                }
-                .sheet(isPresented: $showPhotoPicker) {
-                    PhotoPicker(image: $photoPickerImage)
-                        .onDisappear {
-                            if let loadedImage = photoPickerImage {
-                                canvasImage = loadedImage
-                                canvasHistory.append(loadedImage)
-                                canUndo = true
-                                redoStack.removeAll()
-                                canRedo = false
-                            }
-                        }
-                }
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if !fingerIsDown {
-                                let now = Date()
-                                fingerStartTime = now
-                                strokeStartTime = now  // ✅ record the "spin phase" anchor
-                                activePoints = []
-                                startSampleLoop()
-                            }
-                            fingerLocation = value.location
-                            fingerIsDown = true
-                        }
-                        .onEnded { _ in
-                            fingerIsDown = false
-                            fingerLocation = nil
-                            stopSampleLoop()
-                            commitStroke()
-                        }
-                )
             }
+            .onChange(of: clearTrigger) { _, _ in
+                if let currentImage = canvasImage {
+                    canvasHistory.append(currentImage)  // ✅ Save pre-clear state
+                }
+
+                // 🧼 Clear state
+                activePoints.removeAll()
+                fingerIsDown = false
+                redoStack.removeAll()
+
+                // ✅ Just set canvasImage to blank — don’t push to history
+                let blank = UIGraphicsImageRenderer(size: canvasSize).image { ctx in
+                    ctx.cgContext.setFillColor(UIColor.clear.cgColor)
+                    ctx.cgContext.fill(CGRect(origin: .zero, size: canvasSize))
+                }
+
+                canvasImage = blank
+
+                canUndo = canvasHistory.count > 1
+                canRedo = false
+            }
+//            .onChange(of: undoTrigger) { _, _ in
+//                if let current = canvasImage {
+//                    redoStack.append(current)
+//                }
+//                if let last = canvasHistory.popLast() {
+//                    canvasImage = last
+//                } else {
+//                    canvasImage = nil
+//                }
+//                canUndo = !canvasHistory.isEmpty
+//                canRedo = !redoStack.isEmpty
+//            }
+//            .onChange(of: redoTrigger) { _, _ in
+//                if let redoImage = redoStack.popLast() {
+//                    if let current = canvasImage {
+//                        canvasHistory.append(current)
+//                    }
+//                    canvasImage = redoImage
+//                }
+//                canUndo = !canvasHistory.isEmpty
+//                canRedo = !redoStack.isEmpty
+//            }
+            .onChange(of: saveImageTrigger) { _, _ in
+                if let image = canvasImage {
+                    PhotoLibraryManager.saveImageToPhotos(image) { success in
+                        print("Save to photos: \(success)")
+                    }
+                }
+            }
+            .onChange(of: loadImageTrigger) { _, _ in
+                showPhotoPicker = true
+            }
+            .sheet(isPresented: $showPhotoPicker) {
+                PhotoPicker(image: $photoPickerImage)
+                    .onDisappear {
+                        if let loadedImage = photoPickerImage {
+                            canvasImage = loadedImage
+                            canvasHistory.append(loadedImage)
+                            canUndo = true
+                            redoStack.removeAll()
+                            canRedo = false
+                        }
+                    }
+            }
+            .modifier(
+                DrawingGestureModifier(
+                    fingerIsDown: $fingerIsDown,
+                    fingerLocation: $fingerLocation,
+                    activePoints: $activePoints,
+                    startSampleLoop: startSampleLoop,
+                    stopSampleLoop: stopSampleLoop,
+                    commitStroke: commitStroke,
+                    recordStrokeStart: {
+                        let now = Date()
+                        fingerStartTime = now
+                        strokeStartTime = now
+                    }
+                )
+            )
+            .modifier(CanvasUndoRedo(
+                canvasImage: $canvasImage,
+                canvasHistory: $canvasHistory,
+                redoStack: $redoStack,
+                canUndo: $canUndo,
+                canRedo: $canRedo,
+                undoTrigger: $undoTrigger,
+                redoTrigger: $redoTrigger,
+                saveImageTrigger: $saveImageTrigger,
+                loadImageTrigger: $loadImageTrigger,
+                photoPickerImage: $photoPickerImage,
+                showPhotoPicker: $showPhotoPicker,
+                canvasSize: canvasSize
+            ))
         }
         .sheet(isPresented: $showAbout) {
-            VStack(spacing: 20) {
-                Text("Spindigo")
-                    .font(.largeTitle.bold())
-                Text("Version 1.0\n\nCreated by Alan Metzger\n\nSpindigo lets you draw on a spinning canvas with dynamic control of speed and frame rate.")
-                    .multilineTextAlignment(.center)
-                    .padding()
-
-                Button("Close") {
-                    showAbout = false
-                }
-                .padding()
-                .background(Color.darkIndigo)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
-            .padding()
+            AboutSheet(isPresented: $showAbout)
         }
     }
     
@@ -510,6 +335,124 @@ struct CanvasView: View {
         if animationManager.isAnimating {
             animationManager = AnimationCycleManager() // Reset to defaults
         }
+    }
+}
+
+struct TopControlPanel: View {
+    @Binding var spinRPM: Double
+    @Binding var displayFrameRate: Int
+    var cancelAnimation: () -> Void
+    @Binding var animationManager: AnimationCycleManager
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Spindigo")
+                    .font(.custom("Noteworthy", size: 60))
+                    .bold()
+                    .foregroundColor(.yellow)
+                    .padding(.top, -8)
+
+                Spacer()
+
+                HStack(spacing: 12) {
+                    Button("Zero Spd") {
+                        cancelAnimation()
+                        spinRPM = 0
+                    }
+                    .font(.custom("Noteworthy", size: 32))
+                    .foregroundColor(.white)
+                    .bold()
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.spindigoAccent)
+                    )
+
+                    Button("Animate") {
+                        if !animationManager.isAnimating {
+                            animationManager.startCycle(currentRPM: spinRPM, currentFPS: displayFrameRate)
+                        } else {
+                            animationManager.advanceCycle()
+                        }
+
+                        if animationManager.shouldRestoreOriginal {
+                            spinRPM = animationManager.originalRPM
+                            displayFrameRate = animationManager.originalFPS
+                        } else if let preset = animationManager.currentPreset {
+                            spinRPM = preset.0
+                            displayFrameRate = preset.1
+                        }
+                    }
+                    .font(.custom("Noteworthy", size: 32))
+                    .foregroundColor(.white)
+                    .bold()
+                    .animatedSpindigoGlow(animationManager.isAnimating)
+                }
+            }
+
+            HStack(spacing: 12) {
+                Text("Speed: \(Int(spinRPM)) RPM")
+                    .foregroundColor(.white)
+                    .font(.title3)
+                    .frame(width: 150, alignment: .leading)
+
+                Slider(value: Binding(
+                    get: { spinRPM },
+                    set: {
+                        cancelAnimation()
+                        spinRPM = $0
+                    }
+                ), in: -240...240, step: 1)
+
+                Button("–") {
+                    cancelAnimation()
+                    spinRPM = max(spinRPM - 1, -240)
+                }
+                .controlMiniButtonStyle()
+
+                Button("+") {
+                    cancelAnimation()
+                    spinRPM = min(spinRPM + 1, 240)
+                }
+                .controlMiniButtonStyle()
+            }
+
+            HStack(spacing: 12) {
+                Text("Frame: \(displayFrameRate) fps")
+                    .foregroundColor(.white)
+                    .font(.title3)
+                    .frame(width: 150, alignment: .leading)
+
+                Slider(value: Binding(
+                    get: { Double(displayFrameRate) },
+                    set: {
+                        let newValue = Int($0)
+                        if newValue != displayFrameRate {
+                            cancelAnimation()
+                            displayFrameRate = newValue
+                        }
+                    }
+                ), in: 1...120, step: 1)
+
+                Button("–") {
+                    cancelAnimation()
+                    displayFrameRate = max(displayFrameRate - 1, 1)
+                }
+                .controlMiniButtonStyle()
+
+                Button("+") {
+                    cancelAnimation()
+                    displayFrameRate = min(displayFrameRate + 1, 120)
+                }
+                .controlMiniButtonStyle()
+            }
+        }
+        .padding(.horizontal)
+        .padding(.top, 4)
+        .padding(.bottom, 6)
+        .background(Color.darkIndigo)
     }
 }
 

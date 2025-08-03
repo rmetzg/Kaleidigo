@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-
 struct ControlsView: View {
     @Binding var penSize: CGFloat
     @Binding var displayFrameRate: Int
@@ -22,6 +21,7 @@ struct ControlsView: View {
     @State private var showClearAlert = false
     @State private var showPenOptionsSheet = false
     @State private var penColor: Color = .blue
+    @State private var canvasBackgroundColor: Color = .white
     @State private var undoTrigger = false
     @State private var redoTrigger = false
     @State private var canUndo = false
@@ -39,6 +39,7 @@ struct ControlsView: View {
                 clearTrigger: $clearTrigger,
                 penSize: $penSize,
                 penColor: $penColor,
+                canvasBackgroundColor: $canvasBackgroundColor,
                 isActive: $isActive,
                 undoTrigger: $undoTrigger,
                 redoTrigger: $redoTrigger,
@@ -171,33 +172,9 @@ struct ControlsView: View {
                 Button("No", role: .cancel) {}
             }
             .sheet(isPresented: $showPenOptionsSheet) {
-                PenOptionsSheet(penSize: $penSize, penColor: $penColor) // NEW
+                PenOptionsSheet(penSize: $penSize, penColor: $penColor, canvasBackgroundColor: $canvasBackgroundColor, isPresented: $showPenOptionsSheet)
             }
         }
     }
 }
 
-struct PenOptionsSheet: View {
-    @Binding var penSize: CGFloat
-    @Binding var penColor: Color
-
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Text("Line Thickness: \(Int(penSize))")
-                    .font(.headline)
-
-                Slider(value: $penSize, in: 1...30, step: 1)
-                    .padding()
-
-                ColorPicker("Pen Color", selection: $penColor)
-                    .padding()
-
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("Pen Options")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
