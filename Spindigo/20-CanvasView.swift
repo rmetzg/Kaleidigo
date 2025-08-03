@@ -32,6 +32,8 @@ struct CanvasView: View {
     @State private var showPhotoPicker = false
     @State private var photoPickerImage: UIImage?
     @State private var showAbout = false
+    @State private var showLoadImageAlert = false
+    @State private var usePieShapedMode = false
     
     @State private var animationManager = AnimationCycleManager()
 
@@ -161,21 +163,21 @@ struct CanvasView: View {
                     }
                 }
             }
-            .onChange(of: loadImageTrigger) { _, _ in
-                showPhotoPicker = true
-            }
-            .sheet(isPresented: $showPhotoPicker) {
-                PhotoPicker(image: $photoPickerImage)
-                    .onDisappear {
-                        if let loadedImage = photoPickerImage {
-                            canvasImage = loadedImage
-                            canvasHistory.append(loadedImage)
-                            canUndo = true
-                            redoStack.removeAll()
-                            canRedo = false
-                        }
-                    }
-            }
+//            .onChange(of: loadImageTrigger) { _, _ in
+//                showPhotoPicker = true
+//            }
+//            .sheet(isPresented: $showPhotoPicker) {
+//                PhotoPicker(image: $photoPickerImage)
+//                    .onDisappear {
+//                        if let loadedImage = photoPickerImage {
+//                            canvasImage = loadedImage
+//                            canvasHistory.append(loadedImage)
+//                            canUndo = true
+//                            redoStack.removeAll()
+//                            canRedo = false
+//                        }
+//                    }
+//            }
             .modifier(
                 DrawingGestureModifier(
                     fingerIsDown: $fingerIsDown,
@@ -208,6 +210,23 @@ struct CanvasView: View {
         }
         .sheet(isPresented: $showAbout) {
             AboutSheet(isPresented: $showAbout)
+        }
+        .onChange(of: loadImageTrigger) { _, _ in
+            showLoadImageAlert = true
+        }
+
+        .alert("Load Image", isPresented: $showLoadImageAlert) {
+            Button("Load Normally") {
+                usePieShapedMode = false
+                showPhotoPicker = true
+            }
+            Button("Load as Pie Slice") {
+                usePieShapedMode = true
+                showPhotoPicker = true
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("How would you like to load the image?")
         }
     }
     
@@ -460,7 +479,8 @@ struct AnimationCycleManager {
     let presets: [(rpm: Double, fps: Int)] = [
         (240, 10),
         (140, 18),
-        (190, 22)
+        (190, 22),
+        (103, 15)
     ]
     
     private(set) var originalRPM: Double = 0

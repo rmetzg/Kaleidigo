@@ -57,9 +57,9 @@ struct CanvasUndoRedo: ViewModifier {
                     }
                 }
             }
-            .onChange(of: loadImageTrigger) { _, _ in
-                showPhotoPicker = true
-            }
+//            .onChange(of: loadImageTrigger) { _, _ in
+//                showPhotoPicker = true
+//            }
             .sheet(isPresented: $showPhotoPicker) {
                 PhotoPicker(image: $photoPickerImage)
                     .onDisappear {
