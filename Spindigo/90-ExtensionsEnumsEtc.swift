@@ -66,6 +66,12 @@ enum QuickPenColor: String, CaseIterable, Identifiable {
     }
 }
 
+extension CGFloat {
+    func toRadians() -> CGFloat {
+        return self * .pi / 180
+    }
+}
+
 enum QuickBackgroundColor: String, CaseIterable, Identifiable {
     case white, black, blue, red, yellow, green
 

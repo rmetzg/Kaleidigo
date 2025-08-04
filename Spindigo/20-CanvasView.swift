@@ -205,6 +205,7 @@ struct CanvasView: View {
                 loadImageTrigger: $loadImageTrigger,
                 photoPickerImage: $photoPickerImage,
                 showPhotoPicker: $showPhotoPicker,
+                usePieShapedMode: $usePieShapedMode,
                 canvasSize: canvasSize
             ))
         }
