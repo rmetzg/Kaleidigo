@@ -12,16 +12,27 @@ struct PenOptionsSheet: View {
     @Binding var penColor: Color
     @Binding var canvasBackgroundColor: Color
     @Binding var isPresented: Bool
+    @Binding var selectedQuickPenColor: QuickPenColor?
+    @Binding var penIsEraser: Bool
 
     // Bind selected quick pen color to current penColor
     private var selectedQuickPenColorBinding: Binding<QuickPenColor?> {
         Binding<QuickPenColor?>(
             get: {
-                QuickPenColor.allCases.first(where: { $0.color == penColor })
+                if penIsEraser {
+                    return .eraser
+                } else {
+                    return QuickPenColor.allCases.first(where: { $0.color == penColor })
+                }
             },
             set: { newValue in
-                if let newColor = newValue?.color {
-                    penColor = newColor
+                if let newColor = newValue {
+                    if newColor == .eraser {
+                        penIsEraser = true
+                    } else {
+                        penIsEraser = false
+                        penColor = newColor.color
+                    }
                 }
             }
         )
@@ -44,7 +55,7 @@ struct PenOptionsSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 16) {
-                Text("Pen Thickness")
+                Text("Pen / Eraser Thickness")
                     .font(.title2).bold()
                     .foregroundStyle(.yellow)
 
@@ -56,18 +67,34 @@ struct PenOptionsSheet: View {
 
                 Spacer()
 
-                Text("Quick Pen Color")
+                Text("Quick Pen Color / Eraser")
                     .font(.title2).bold()
                     .foregroundStyle(.yellow)
 
-                Picker("Quick Pen Color", selection: selectedQuickPenColorBinding) {
-                    ForEach(QuickPenColor.allCases) { option in
-                        Text(option.label).tag(Optional(option))
+                
+                HStack {
+                    Picker("Quick Pen Color", selection: selectedQuickPenColorBinding) {
+                        ForEach(QuickPenColor.allCases.filter { $0 != .eraser }) { option in
+                            Text(option.label).tag(Optional(option))
+                        }
                     }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                    .pickerStyle(.segmented)
 
+                    Button(action: {
+                        selectedQuickPenColor = .eraser
+                        penIsEraser = true
+                    }) {
+                        Image("Eraser")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 40, height: 40) // Adjust size as needed
+                            .padding(6)
+                            .background(penIsEraser ? Color.gray.opacity(0.3) : Color.clear)
+                            .clipShape(Circle())
+                    }
+                    .accessibilityLabel("Eraser Mode")
+                }
+                .padding(.horizontal)
                 ColorPicker("Precise Pen Color", selection: $penColor)
                     .padding()
                     .font(.title2)
@@ -89,6 +116,7 @@ struct PenOptionsSheet: View {
                 ColorPicker("Precise Background Color", selection: $canvasBackgroundColor)
                     .padding()
                     .font(.title2)
+                    .disabled(selectedQuickPenColor == .eraser)
 
                 Spacer()
             }

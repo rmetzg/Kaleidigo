@@ -46,23 +46,30 @@ extension Color {
 }
 
 enum QuickPenColor: String, CaseIterable, Identifiable {
-    case white, black, blue, red, yellow, green
+    case black, white, red, blue, green, yellow, purple, eraser
 
     var id: String { rawValue }
 
     var color: Color {
         switch self {
-        case .white: return .white
         case .black: return .black
-        case .blue: return .blue
+        case .white: return .white
         case .red: return .red
-        case .yellow: return .yellow
+        case .blue: return .blue
         case .green: return .green
+        case .yellow: return .yellow
+        case .purple: return .purple
+        case .eraser: return .clear  // Not used for drawing color directly
         }
     }
 
     var label: String {
-        rawValue.capitalized
+        self == .eraser ? "Eraser" : rawValue.capitalized
+    }
+
+
+    var isEraser: Bool {
+        self == .eraser
     }
 }
 
@@ -73,7 +80,7 @@ extension CGFloat {
 }
 
 enum QuickBackgroundColor: String, CaseIterable, Identifiable {
-    case white, black, blue, red, yellow, green
+    case white, black, blue, red, yellow, green, purple
 
     var id: String { rawValue }
 
@@ -85,6 +92,7 @@ enum QuickBackgroundColor: String, CaseIterable, Identifiable {
         case .red: return .red
         case .yellow: return .yellow
         case .green: return .green
+        case .purple: return .purple
         }
     }
 

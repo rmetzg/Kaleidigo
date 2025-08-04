@@ -29,6 +29,8 @@ struct ControlsView: View {
     @State private var saveImageTrigger = false
     @State private var loadImageTrigger = false
     @State private var showSaveAlert = false
+    @State var selectedQuickPenColor: QuickPenColor? = nil
+    @State var penIsEraser: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -46,7 +48,8 @@ struct ControlsView: View {
                 canUndo: $canUndo,
                 canRedo: $canRedo,
                 saveImageTrigger: $saveImageTrigger,
-                loadImageTrigger: $loadImageTrigger
+                loadImageTrigger: $loadImageTrigger,
+                penIsEraser: $penIsEraser
             )
             .overlay(
                 VStack {
@@ -202,9 +205,17 @@ struct ControlsView: View {
                 Button("No", role: .cancel) {}
             }
             .sheet(isPresented: $showPenOptionsSheet) {
-                PenOptionsSheet(penSize: $penSize, penColor: $penColor, canvasBackgroundColor: $canvasBackgroundColor, isPresented: $showPenOptionsSheet)
+                PenOptionsSheet(
+                    penSize: $penSize,
+                    penColor: $penColor,
+                    canvasBackgroundColor: $canvasBackgroundColor,
+                    isPresented: $showPenOptionsSheet,
+                    selectedQuickPenColor: $selectedQuickPenColor,
+                    penIsEraser: $penIsEraser
+                )
             }
         }
     }
 }
+
 

@@ -36,6 +36,8 @@ struct CanvasView: View {
     @State private var usePieShapedMode = false
     
     @State private var animationManager = AnimationCycleManager()
+    
+
 
     @Binding var displayFrameRate: Int
     @Binding var spinRPM: Double
@@ -50,6 +52,7 @@ struct CanvasView: View {
     @Binding var canRedo: Bool
     @Binding var saveImageTrigger: Bool
     @Binding var loadImageTrigger: Bool
+    @Binding var penIsEraser: Bool
     
 
     struct PolarSample {
@@ -74,6 +77,7 @@ struct CanvasView: View {
                 fingerIsDown: $fingerIsDown,
                 fingerLocation: $fingerLocation,
                 currentTime: $currentTime,
+                penIsEraser: $penIsEraser,
                 penSize: penSize,
                 penColor: penColor,
                 canvasBackgroundColor: canvasBackgroundColor,
@@ -238,7 +242,8 @@ struct CanvasView: View {
         activeDiameter: CGFloat,
         points: [CGPoint],
         color: Color,
-        lineWidth: CGFloat
+        lineWidth: CGFloat,
+        isEraser: Bool
     ) -> UIImage {
         let rendererSize = CGSize(width: activeDiameter, height: activeDiameter)
         let renderer = UIGraphicsImageRenderer(size: rendererSize)
@@ -252,7 +257,13 @@ struct CanvasView: View {
             image?.draw(in: CGRect(origin: .zero, size: rendererSize), blendMode: .normal, alpha: 1.0)
 
             let uiColor = UIColor(color)
-            context.cgContext.setStrokeColor(uiColor.cgColor)
+            if isEraser {
+                context.cgContext.setBlendMode(.clear)
+                context.cgContext.setStrokeColor(UIColor.clear.cgColor)
+            } else {
+                context.cgContext.setBlendMode(.normal)
+                context.cgContext.setStrokeColor(UIColor(color).cgColor)
+            }
             context.cgContext.setLineWidth(lineWidth)
             context.cgContext.setLineCap(.round)
 
@@ -297,7 +308,8 @@ struct CanvasView: View {
             activeDiameter: activeDiameter,
             points: renderedPoints,
             color: penColor,
-            lineWidth: penSize
+            lineWidth: penSize,
+            isEraser: penIsEraser
         )
 
         activePoints.removeAll()
