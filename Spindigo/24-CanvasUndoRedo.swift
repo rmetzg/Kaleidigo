@@ -84,9 +84,10 @@ struct CanvasUndoRedo: ViewModifier {
     
     func makeSixSliceComposite(from image: UIImage, canvasSize: CGSize) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: canvasSize)
-
         let center = CGPoint(x: canvasSize.width / 2, y: canvasSize.height / 2)
         let radius = min(canvasSize.width, canvasSize.height) / 2
+
+        let imageZoom: CGFloat = 0.5  // <— Shrinks image to show more
 
         return renderer.image { context in
             let cgCtx = context.cgContext
@@ -96,35 +97,47 @@ struct CanvasUndoRedo: ViewModifier {
 
                 cgCtx.saveGState()
 
-                // Rotate the entire context around the center
+                // Rotate context for this slice
                 cgCtx.translateBy(x: center.x, y: center.y)
                 cgCtx.rotate(by: angle.toRadians())
                 cgCtx.translateBy(x: -center.x, y: -center.y)
 
-                // Create wedge path (0° to 60° wedge anchored at center)
+                // Clip to wedge
                 let wedgePath = CGMutablePath()
                 wedgePath.move(to: center)
-                wedgePath.addArc(center: center,
-                                 radius: radius,
+                wedgePath.addArc(center: center, radius: radius,
                                  startAngle: 0,
                                  endAngle: CGFloat(60).toRadians(),
                                  clockwise: false)
                 wedgePath.closeSubpath()
-
                 cgCtx.addPath(wedgePath)
                 cgCtx.clip()
 
-                // Draw the image upright, scaled to fill the circle
-                let imageSize = image.size
-                let hRatio = canvasSize.width / imageSize.width
-                let vRatio = canvasSize.height / imageSize.height
-                let scale = max(hRatio, vRatio)
+                // Rotate image by 120° inside wedge
+                cgCtx.translateBy(x: center.x, y: center.y)
+                cgCtx.rotate(by: (120).toRadians())
+                cgCtx.translateBy(x: -center.x, y: -center.y)
 
-                let scaledWidth = imageSize.width * scale
-                let scaledHeight = imageSize.height * scale
+                // Scale and center the image
+                let imageSize = image.size
+                let imageZoom: CGFloat = 0.5
+                let imageZoomOffset: CGFloat = 0.0
+
+                let imageAspectRatio = imageSize.width / imageSize.height
+
+                // Scale height to match the pie wedge radius
+                let scaledHeight = radius
+                let scaledWidth = scaledHeight * imageAspectRatio
+
+                // Still center the image at the midpoint of the wedge
+                let pieSliceMidpoint = CGPoint(
+                    x: center.x,
+                    y: center.y - radius / 2
+                )
+
                 let imageOrigin = CGPoint(
-                    x: center.x - scaledWidth / 2,
-                    y: center.y - scaledHeight / 2
+                    x: pieSliceMidpoint.x - scaledWidth / 2,
+                    y: pieSliceMidpoint.y - scaledHeight / 2
                 )
 
                 let drawRect = CGRect(origin: imageOrigin, size: CGSize(width: scaledWidth, height: scaledHeight))

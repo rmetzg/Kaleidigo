@@ -478,7 +478,9 @@ struct TopControlPanel: View {
 
 struct AnimationCycleManager {
     let presets: [(rpm: Double, fps: Int)] = [
-        (240, 10),
+        (240, 23),
+        (240, 24),
+        (240, 25),
         (140, 18),
         (190, 22),
         (103, 15)
