@@ -359,7 +359,7 @@ struct CanvasView: View {
             iPhonePopupButton(title: "Save/Load/Clear", color: .orange) {
                 showSaveLoadSheet = true
             }
-            iPhonePopupButton(title: "Colors", color: .purple) {
+            iPhonePopupButton(title: "Colors / Erase", color: .purple) {
                 showColorsSheet = true
             }
         }
@@ -386,7 +386,6 @@ struct CanvasView: View {
                 penSize: $penSize,
                 penColor: $penColor,
                 canvasBackgroundColor: $canvasBackgroundColor,
-                isPresented: $showPenOptionsSheet,
                 selectedQuickPenColor: $selectedQuickPenColor,
                 penEraser: $penEraser
             )
@@ -397,7 +396,7 @@ struct CanvasView: View {
         Button(action: action) {
             Text(title)
                 .font(.custom("Noteworthy", size: 32 * DeviceScaling.scaleFactor))
-                .foregroundColor(.darkIndigo)
+                .foregroundColor(.black)
                 .bold()
                 .multilineTextAlignment(.center)
                 .frame(width: 190 * DeviceScaling.scaleFactor,
