@@ -45,17 +45,21 @@ struct SpeedPopupSheet: View {
                 .padding(.horizontal, 10)
 
                 HStack(spacing: 20) {
-                    Button("–") {
+                    RampingButton(label: "–", onStep: {
                         cancelAnimation()
                         spinRPM = max(spinRPM - 1, -240)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        spinRPM = max(spinRPM - 1, -240)
+                    })
 
-                    Button("+") {
+                    RampingButton(label: "+", onStep: {
                         cancelAnimation()
                         spinRPM = min(spinRPM + 1, 240)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        spinRPM = min(spinRPM + 1, 240)
+                    })
                 }
                 .padding(.bottom, 8)
             }
@@ -99,17 +103,21 @@ struct SpeedPopupSheet: View {
                 .padding(.horizontal, 10)
 
                 HStack(spacing: 20) {
-                    Button("–") {
+                    RampingButton(label: "–", onStep: {
                         cancelAnimation()
                         displayFrameRate = max(displayFrameRate - 1, 1)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        displayFrameRate = max(displayFrameRate - 1, 1)
+                    })
 
-                    Button("+") {
+                    RampingButton(label: "+", onStep: {
                         cancelAnimation()
                         displayFrameRate = min(displayFrameRate + 1, 120)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        displayFrameRate = min(displayFrameRate + 1, 120)
+                    })
                 }
                 .padding(.bottom, 8)
             }

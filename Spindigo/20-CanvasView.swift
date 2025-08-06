@@ -479,17 +479,23 @@ struct TopControlPanel: View {
                         }
                     ), in: -240...240, step: 1)
                     
-                    Button("–") {
+                    RampingButton(label: "–", onStep: {
                         cancelAnimation()
                         spinRPM = max(spinRPM - 1, -240)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        spinRPM = max(spinRPM - 1, -240)
+                    })
+ //                   .controlMiniButtonStyle()
                     
-                    Button("+") {
+                    RampingButton(label: "+", onStep: {
                         cancelAnimation()
                         spinRPM = min(spinRPM + 1, 240)
-                    }
-                    .controlMiniButtonStyle()
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        spinRPM = min(spinRPM + 1, 240)
+                    })
+  //                  .controlMiniButtonStyle()
                 }
             }
             
@@ -511,17 +517,23 @@ struct TopControlPanel: View {
                     }
                 ), in: 1...120, step: 1)
                 
-                Button("–") {
+                RampingButton(label: "–", onStep: {
                     cancelAnimation()
                     displayFrameRate = max(displayFrameRate - 1, 1)
-                }
-                .controlMiniButtonStyle()
-                
-                Button("+") {
+                }, onLongPressStep: {
                     cancelAnimation()
-                    displayFrameRate = min(displayFrameRate + 1, 120)
-                }
-                .controlMiniButtonStyle()
+                    displayFrameRate = max(displayFrameRate - 1, 1)
+                })
+  //              .controlMiniButtonStyle()
+                
+                RampingButton(label: "+", onStep: {
+                        cancelAnimation()
+                        displayFrameRate = min(displayFrameRate + 1, 120)
+                    }, onLongPressStep: {
+                        cancelAnimation()
+                        displayFrameRate = min(displayFrameRate + 1, 120)
+                    })
+   //             .controlMiniButtonStyle()
             }
         }
         }

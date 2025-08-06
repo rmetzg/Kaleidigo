@@ -32,6 +32,57 @@ struct OrbitingPath {
     let lineWidth: CGFloat
 }
 
+struct RampingButton: View {
+    let label: String
+    let onStep: () -> Void
+    let onLongPressStep: () -> Void
+
+    @State private var isPressed = false
+    @State private var timer: Timer?
+
+    var body: some View {
+        Text(label)
+            .font(.custom("Noteworthy", size: 32))
+            .foregroundStyle(.white)
+            .frame(minWidth: 60, minHeight: 44)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.spindigoAccent)
+            )
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !isPressed {
+                            isPressed = true
+                            onStep()
+                            startTimer()
+                        }
+                    }
+                    .onEnded { _ in
+                        isPressed = false
+                        stopTimer()
+                    }
+            )
+            .onDisappear {
+                stopTimer()
+            }
+    }
+
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            if isPressed {
+                onLongPressStep()
+            }
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+}
+
 extension Double {
     func toRadians() -> CGFloat { CGFloat(self * .pi / 180) }
     func toDegrees() -> Double { self * 180 / .pi }
