@@ -30,10 +30,10 @@ struct ControlsView: View {
     @State private var loadImageTrigger = false
     @State private var showSaveAlert = false
     @State var selectedQuickPenColor: QuickPenColor? = nil
-    @State var penIsEraser: Bool = false
+    @State var penEraser: Bool = false
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 0 * DeviceScaling.scaleFactor) {
             
             CanvasView(
                 displayFrameRate: $displayFrameRate,
@@ -49,81 +49,89 @@ struct ControlsView: View {
                 canRedo: $canRedo,
                 saveImageTrigger: $saveImageTrigger,
                 loadImageTrigger: $loadImageTrigger,
-                penIsEraser: $penIsEraser
+                penEraser: $penEraser
             )
             .overlay(
                 VStack {
                     Spacer()
                     
                     GeometryReader { geo in
-                        HStack(spacing: 0) {
+                        HStack(spacing: 0 * DeviceScaling.scaleFactor) {
                             Text("")
-                                .frame(width: geo.size.width * 0.033, alignment: .center)
+                                .frame(width: geo.size.width * 0.023, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
                             
                             Text("Save      Load")
-                                .frame(width: geo.size.width * 0.14, alignment: .center)
+                                .frame(width: geo.size.width * 0.16, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
                             
                             Text(" ")
-                                .frame(width: geo.size.width * 0.56, alignment: .center)
+                                .frame(width: geo.size.width * 0.55, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
 
                             Text("Undo     Redo")
                                 .frame(width: geo.size.width * 0.16, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
                             
                             Text(" ")
                                 .frame(width: geo.size.width * 0.008, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
 
                             Text("Colors")
                                 .frame(width: geo.size.width * 0.08, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
                             
                             Text("")
                                 .frame(width: geo.size.width * 0.03, alignment: .center)
+                                .font(.system(size: 17 * DeviceScaling.scaleFactor))
                         }
                     }
-                    .frame(height: 14)  // Optional: limit height
+                    .frame(height: 14 * DeviceScaling.scaleFactor)  // Optional: limit height
                     
                     HStack {
-                        
-                        Button {
-                            showSaveAlert = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 22))
-                                .padding()
-                                .background(Color.gray.opacity(0.8))
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
+                        if !DeviceInfo.isPhone {
+                            Button {
+                                showSaveAlert = true
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 28 * DeviceScaling.scaleFactor))
+                                    .padding(12 * DeviceScaling.scaleFactor)
+                                    .background(Color.gray.opacity(0.8))
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5 * DeviceScaling.scaleFactor)
+                            }
+                            .accessibilityLabel("Save to Photos")
+                            
+                            Button {
+                                loadImageTrigger.toggle()
+                            } label: {
+                                Image(systemName: "square.and.arrow.down")
+                                    .font(.system(size: 28 * DeviceScaling.scaleFactor))
+                                    .padding(12 * DeviceScaling.scaleFactor)
+                                    .background(Color.gray.opacity(0.8))
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5 * DeviceScaling.scaleFactor)
+                            }
+                            
+                            Spacer()
+                            
+                            // Trash (Clear) Button
+                            Button {
+                                showClearAlert = true
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 28 * DeviceScaling.scaleFactor))
+                                    .padding(12 * DeviceScaling.scaleFactor)
+                                    .background(Color.red.opacity(0.8))
+                                    .foregroundColor(.white)
+                                    .clipShape(Circle())
+                                    .shadow(radius: 5 * DeviceScaling.scaleFactor)
+                            }
+                            .accessibilityLabel("Clear canvas")
                         }
-                        .accessibilityLabel("Save to Photos")
                         
-                        Button {
-                            loadImageTrigger.toggle()
-                        } label: {
-                            Image(systemName: "square.and.arrow.down")
-                                .font(.system(size: 22))
-                                .padding()
-                                .background(Color.gray.opacity(0.8))
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
-                        }
-                        
-                        Spacer()
-                        
-                        // Trash (Clear) Button
-                        Button {
-                            showClearAlert = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .font(.system(size: 22))
-                                .padding()
-                                .background(Color.red.opacity(0.8))
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                                .shadow(radius: 5)
-                        }
-                        .accessibilityLabel("Clear canvas")
-
                         Spacer()
                         Spacer()
                         Spacer()
@@ -141,54 +149,56 @@ struct ControlsView: View {
                             if canUndo { undoTrigger.toggle() }
                         } label: {
                             Image(systemName: "arrow.uturn.backward")
-                                .font(.system(size: 22))
-                                .padding()
+                                .font(.system(size: 28 * DeviceScaling.scaleFactor))
+                                .padding(12 * DeviceScaling.scaleFactor)
                                 .background(Color.gray.opacity(0.8))
                                 .foregroundColor(canUndo ? .white : .gray)
                                 .disabled(!canUndo)
                                 .clipShape(Circle())
-                                .shadow(radius: 5)
+                                .shadow(radius: 5 * DeviceScaling.scaleFactor)
                         }
                         .accessibilityLabel("Undo last stroke")
-
+                        
                         // Redo Button
                         Button {
                             if canRedo { redoTrigger.toggle() }
                         } label: {
                             Image(systemName: "arrow.uturn.forward")
-                                .font(.system(size: 22))
-                                .padding()
+                                .font(.system(size: 28 * DeviceScaling.scaleFactor))
+                                .padding(12 * DeviceScaling.scaleFactor)
                                 .background(Color.gray.opacity(0.8))
                                 .foregroundColor(canRedo ? .white : .gray)
                                 .disabled(redoStack.isEmpty)
                                 .clipShape(Circle())
-                                .shadow(radius: 5)
+                                .shadow(radius: 5 * DeviceScaling.scaleFactor)
                         }
                         .accessibilityLabel("Redo last stroke")
                         
-                  //      Spacer()
-
+                        //      Spacer()
+                        
                         // Pen Options Button
+                        if !DeviceInfo.isPhone {
                         Button {
                             showPenOptionsSheet = true
                         } label: {
                             ZStack {
                                 Circle()
                                     .fill(Color.gray.opacity(0.4))
-                                    .frame(width: 54, height: 54)
-                                    .shadow(radius: 5)
-
-                                VStack(spacing: 3) {
-                                    Rectangle().fill(Color.green).frame(width: 20, height: 4)
-                                    Rectangle().fill(Color.blue).frame(width: 20, height: 6)
-                                    Rectangle().fill(Color.red).frame(width: 20, height: 8)
+                                    .frame(width: 54 * DeviceScaling.scaleFactor, height: 54 * DeviceScaling.scaleFactor)
+                                    .shadow(radius: 5 * DeviceScaling.scaleFactor)
+                                
+                                VStack(spacing: 3 * DeviceScaling.scaleFactor) {
+                                    Rectangle().fill(Color.green).frame(width: 20 * DeviceScaling.scaleFactor, height: 4 * DeviceScaling.scaleFactor)
+                                    Rectangle().fill(Color.blue).frame(width: 20 * DeviceScaling.scaleFactor, height: 6 * DeviceScaling.scaleFactor)
+                                    Rectangle().fill(Color.red).frame(width: 20 * DeviceScaling.scaleFactor, height: 8 * DeviceScaling.scaleFactor)
                                 }
                             }
                         }
                         .accessibilityLabel("Pen options")
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, -25)  // 👈 Lower them toward bottom here
+                    }
+                    .padding(.horizontal, 20 * DeviceScaling.scaleFactor)
+                    .padding(.bottom, -25 * DeviceScaling.scaleFactor)  // 👈 Lower them toward bottom here
                 }
                 .ignoresSafeArea(.keyboard)  // 👈 Prevents keyboard from pushing overlay up
             )
@@ -211,7 +221,7 @@ struct ControlsView: View {
                     canvasBackgroundColor: $canvasBackgroundColor,
                     isPresented: $showPenOptionsSheet,
                     selectedQuickPenColor: $selectedQuickPenColor,
-                    penIsEraser: $penIsEraser
+                    penEraser: $penEraser
                 )
             }
         }

@@ -13,13 +13,13 @@ struct PenOptionsSheet: View {
     @Binding var canvasBackgroundColor: Color
     @Binding var isPresented: Bool
     @Binding var selectedQuickPenColor: QuickPenColor?
-    @Binding var penIsEraser: Bool
+    @Binding var penEraser: Bool
 
     // Bind selected quick pen color to current penColor
     private var selectedQuickPenColorBinding: Binding<QuickPenColor?> {
         Binding<QuickPenColor?>(
             get: {
-                if penIsEraser {
+                if penEraser {
                     return .eraser
                 } else {
                     return QuickPenColor.allCases.first(where: { $0.color == penColor })
@@ -28,9 +28,9 @@ struct PenOptionsSheet: View {
             set: { newValue in
                 if let newColor = newValue {
                     if newColor == .eraser {
-                        penIsEraser = true
+                        penEraser = true
                     } else {
-                        penIsEraser = false
+                        penEraser = false
                         penColor = newColor.color
                     }
                 }
@@ -54,21 +54,24 @@ struct PenOptionsSheet: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
+            VStack(spacing: DeviceInfo.isPhone ? 6 : 10) {
                 Text("Pen / Eraser Thickness")
-                    .font(.title2).bold()
+                    .font(.system(size: DeviceInfo.isPhone ? 16 : 22))
+                    .bold()
                     .foregroundStyle(.yellow)
 
                 Text("\(Int(penSize))")
-                    .font(.title).bold()
+                    .font(.system(size: DeviceInfo.isPhone ? 20 : 28))
+                    .bold()
+                    .foregroundStyle(.green)
 
                 Slider(value: $penSize, in: 1...30, step: 1)
-                    .padding()
+                    .padding(DeviceInfo.isPhone ? 8 : 16)
 
-                Spacer()
 
                 Text("Quick Pen Color / Eraser")
-                    .font(.title2).bold()
+                    .font(.system(size: DeviceInfo.isPhone ? 16 : 22))
+                    .bold()
                     .foregroundStyle(.yellow)
 
                 
@@ -82,27 +85,28 @@ struct PenOptionsSheet: View {
 
                     Button(action: {
                         selectedQuickPenColor = .eraser
-                        penIsEraser = true
+                        penEraser = true
                     }) {
                         Image("Eraser")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 40, height: 40) // Adjust size as needed
+                            .frame(width: 60, height: 60) // Adjust size as needed
                             .padding(6)
-                            .background(penIsEraser ? Color.gray.opacity(0.3) : Color.clear)
+                            .background(penEraser ? Color.gray.opacity(0.3) : Color.clear)
                             .clipShape(Circle())
                     }
                     .accessibilityLabel("Eraser Mode")
                 }
                 .padding(.horizontal)
                 ColorPicker("Precise Pen Color", selection: $penColor)
-                    .padding()
-                    .font(.title2)
-
+                    .font(.system(size: DeviceInfo.isPhone ? 16 : 22))
+                    .padding(.bottom, 4)
+                
                 Spacer()
 
                 Text("Quick Background Color")
-                    .font(.title2).bold()
+                    .font(.system(size: DeviceInfo.isPhone ? 16 : 22))
+                    .bold()
                     .foregroundStyle(.yellow)
 
                 Picker("Quick Background Color", selection: selectedQuickBackgroundColorBinding) {
@@ -112,10 +116,11 @@ struct PenOptionsSheet: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
+                .padding(.vertical, DeviceInfo.isPhone ? 6 : 16)
 
                 ColorPicker("Precise Background Color", selection: $canvasBackgroundColor)
-                    .padding()
-                    .font(.title2)
+                    .padding(.bottom, 4)
+                    .font(.system(size: DeviceInfo.isPhone ? 16 : 22))
                     .disabled(selectedQuickPenColor == .eraser)
 
                 Spacer()
@@ -128,7 +133,7 @@ struct PenOptionsSheet: View {
                         isPresented = false
                     }) {
                         Image(systemName: "xmark")
-                            .font(.headline)
+                            .font(.system(size: DeviceInfo.isPhone ? 12 : 17))
                     }
                     .accessibilityLabel("Close")
                 }

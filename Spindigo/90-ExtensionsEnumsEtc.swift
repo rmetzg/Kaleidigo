@@ -7,6 +7,23 @@
 
 import SwiftUI
 
+struct DeviceInfo {
+    static var isPhone: Bool {
+        UIDevice.current.userInterfaceIdiom == .phone
+    }
+
+    static var isPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+}
+
+enum DeviceScaling {
+    static let screenWidth = UIScreen.main.bounds.width
+    static let baseWidth: CGFloat = 744  // iPad Mini 7 width in portrait
+    static var scaleFactor: CGFloat {
+        min(1.0, screenWidth / baseWidth)
+    }
+}
 
 struct OrbitingPath {
     let points: [CGPoint]
@@ -23,7 +40,7 @@ extension Double {
 extension View {
     func controlMiniButtonStyle() -> some View {
         self
-            .font(.largeTitle)
+            .font(.system(size: 34))
                     .foregroundStyle(.white)
                     .font(.custom("Noteworthy", size: 32))
                     .frame(minWidth: 60, minHeight: 44)
@@ -42,6 +59,8 @@ extension Color {
     static let spindigoOrange = Color(red: 0xFF / 255.0, green: 0x6A / 255.0, blue: 0x00 / 255.0)
     
     static let spindigoYellow = Color(red: 0xFF / 255.0, green: 0xF9 / 255.0, blue: 0x94 / 255.0)
+    
+    static let darkGreen = Color(red: 0x38 / 255.0, green: 0x95 / 255.0, blue: 0x1A / 255.0)
     
 }
 

@@ -37,6 +37,13 @@ struct CanvasView: View {
     
     @State private var animationManager = AnimationCycleManager()
     
+    @State private var showSpeedSheet = false
+    @State private var showSaveLoadSheet = false
+    @State private var showColorsSheet = false
+    @State private var showPenOptionsSheet = false
+    @State var selectedQuickPenColor: QuickPenColor? = nil
+    
+    
 
 
     @Binding var displayFrameRate: Int
@@ -52,7 +59,7 @@ struct CanvasView: View {
     @Binding var canRedo: Bool
     @Binding var saveImageTrigger: Bool
     @Binding var loadImageTrigger: Bool
-    @Binding var penIsEraser: Bool
+    @Binding var penEraser: Bool
     
 
     struct PolarSample {
@@ -69,6 +76,10 @@ struct CanvasView: View {
                 cancelAnimation: cancelAnimationIfActive,
                 animationManager: $animationManager
             )
+            
+            if DeviceInfo.isPhone {
+                iPhonePopupButtonRow
+            }
 
             CanvasDrawingArea(
                 canvasSize: $canvasSize,
@@ -77,12 +88,13 @@ struct CanvasView: View {
                 fingerIsDown: $fingerIsDown,
                 fingerLocation: $fingerLocation,
                 currentTime: $currentTime,
-                penIsEraser: $penIsEraser,
+                penEraser: $penEraser,
                 penSize: penSize,
                 penColor: penColor,
                 canvasBackgroundColor: canvasBackgroundColor,
                 spinRPM: spinRPM
             )
+            
             .onAppear {
                 if isActive { startRenderLoop() }
 
@@ -96,18 +108,22 @@ struct CanvasView: View {
 
                 canUndo = canvasHistory.count > 1
             }
+            
             .onDisappear {
                 stopRenderLoop()
                 stopSampleLoop()
             }
+            
             .onChange(of: displayFrameRate) { _, _ in
                 if isActive {
                     startRenderLoop()
                 }
             }
+            
             .onChange(of: isActive) { _, newValue in
                 newValue ? startRenderLoop() : stopRenderLoop()
             }
+            
             .onChange(of: scenePhase) { _, newPhase in
                 switch newPhase {
                 case .active:
@@ -117,6 +133,7 @@ struct CanvasView: View {
                     stopSampleLoop()
                 }
             }
+            
             .onChange(of: clearTrigger) { _, _ in
                 if let currentImage = canvasImage {
                     canvasHistory.append(currentImage)  // ✅ Save pre-clear state
@@ -138,28 +155,7 @@ struct CanvasView: View {
                 canUndo = canvasHistory.count > 1
                 canRedo = false
             }
-//            .onChange(of: undoTrigger) { _, _ in
-//                if let current = canvasImage {
-//                    redoStack.append(current)
-//                }
-//                if let last = canvasHistory.popLast() {
-//                    canvasImage = last
-//                } else {
-//                    canvasImage = nil
-//                }
-//                canUndo = !canvasHistory.isEmpty
-//                canRedo = !redoStack.isEmpty
-//            }
-//            .onChange(of: redoTrigger) { _, _ in
-//                if let redoImage = redoStack.popLast() {
-//                    if let current = canvasImage {
-//                        canvasHistory.append(current)
-//                    }
-//                    canvasImage = redoImage
-//                }
-//                canUndo = !canvasHistory.isEmpty
-//                canRedo = !redoStack.isEmpty
-//            }
+            
             .onChange(of: saveImageTrigger) { _, _ in
                 if let image = canvasImage {
                     PhotoLibraryManager.saveImageToPhotos(image) { success in
@@ -167,21 +163,7 @@ struct CanvasView: View {
                     }
                 }
             }
-//            .onChange(of: loadImageTrigger) { _, _ in
-//                showPhotoPicker = true
-//            }
-//            .sheet(isPresented: $showPhotoPicker) {
-//                PhotoPicker(image: $photoPickerImage)
-//                    .onDisappear {
-//                        if let loadedImage = photoPickerImage {
-//                            canvasImage = loadedImage
-//                            canvasHistory.append(loadedImage)
-//                            canUndo = true
-//                            redoStack.removeAll()
-//                            canRedo = false
-//                        }
-//                    }
-//            }
+            
             .modifier(
                 DrawingGestureModifier(
                     fingerIsDown: $fingerIsDown,
@@ -225,7 +207,7 @@ struct CanvasView: View {
                 usePieShapedMode = false
                 showPhotoPicker = true
             }
-            Button("Load as Pie Slice") {
+            Button("Load as Pie Slices") {
                 usePieShapedMode = true
                 showPhotoPicker = true
             }
@@ -309,7 +291,7 @@ struct CanvasView: View {
             points: renderedPoints,
             color: penColor,
             lineWidth: penSize,
-            isEraser: penIsEraser
+            isEraser: penEraser
         )
 
         activePoints.removeAll()
@@ -368,6 +350,65 @@ struct CanvasView: View {
             animationManager = AnimationCycleManager() // Reset to defaults
         }
     }
+    
+    private var iPhonePopupButtonRow: some View {
+        HStack(spacing: 32 * DeviceScaling.scaleFactor) {
+            iPhonePopupButton(title: "Speed/Frame Rate", color: .blue) {
+                showSpeedSheet = true
+            }
+            iPhonePopupButton(title: "Save/Load/Clear", color: .orange) {
+                showSaveLoadSheet = true
+            }
+            iPhonePopupButton(title: "Colors", color: .purple) {
+                showColorsSheet = true
+            }
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 4)
+        .frame(maxWidth: .infinity)
+        .background(Color.darkIndigo)
+        .sheet(isPresented: $showSpeedSheet) {
+            SpeedPopupSheet(
+                spinRPM: $spinRPM,
+                displayFrameRate: $displayFrameRate,
+                cancelAnimation: cancelAnimationIfActive
+            )
+        }
+        .sheet(isPresented: $showSaveLoadSheet) {
+            SaveLoadClearSheet(
+                saveImageTrigger: $saveImageTrigger,
+                loadImageTrigger: $loadImageTrigger,
+                clearTrigger: $clearTrigger
+            )
+        }
+        .sheet(isPresented: $showColorsSheet) {
+            PenOptionsSheet(
+                penSize: $penSize,
+                penColor: $penColor,
+                canvasBackgroundColor: $canvasBackgroundColor,
+                isPresented: $showPenOptionsSheet,
+                selectedQuickPenColor: $selectedQuickPenColor,
+                penEraser: $penEraser
+            )
+        }
+    }
+    
+    private func iPhonePopupButton(title: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("Noteworthy", size: 32 * DeviceScaling.scaleFactor))
+                .foregroundColor(.darkIndigo)
+                .bold()
+                .multilineTextAlignment(.center)
+                .frame(width: 190 * DeviceScaling.scaleFactor,
+                       height: 144 * DeviceScaling.scaleFactor, // ✅ Enough for 2 lines
+                       alignment: .center)                     // ✅ Center text vertically
+                .background(
+                    RoundedRectangle(cornerRadius: 10 * DeviceScaling.scaleFactor)
+                        .fill(Color.spindigoAccent)
+                )
+        }
+    }
 }
 
 struct TopControlPanel: View {
@@ -377,38 +418,38 @@ struct TopControlPanel: View {
     @Binding var animationManager: AnimationCycleManager
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 8 * DeviceScaling.scaleFactor) {
             HStack {
                 Text("Spindigo")
-                    .font(.custom("Noteworthy", size: 60))
+                    .font(.custom("Noteworthy", size: 60 * DeviceScaling.scaleFactor))
                     .bold()
                     .foregroundColor(.yellow)
                     .padding(.top, -8)
-
+                
                 Spacer()
-
-                HStack(spacing: 12) {
+                
+                HStack(spacing: 12 * DeviceScaling.scaleFactor) {
                     Button("Zero Spd") {
                         cancelAnimation()
                         spinRPM = 0
                     }
-                    .font(.custom("Noteworthy", size: 32))
+                    .font(.custom("Noteworthy", size: 32 * DeviceScaling.scaleFactor))
                     .foregroundColor(.white)
                     .bold()
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 12 * DeviceScaling.scaleFactor)
+                    .padding(.vertical, 6 * DeviceScaling.scaleFactor)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: 10 * DeviceScaling.scaleFactor)
                             .fill(Color.spindigoAccent)
                     )
-
+                    
                     Button("Animate") {
                         if !animationManager.isAnimating {
                             animationManager.startCycle(currentRPM: spinRPM, currentFPS: displayFrameRate)
                         } else {
                             animationManager.advanceCycle()
                         }
-
+                        
                         if animationManager.shouldRestoreOriginal {
                             spinRPM = animationManager.originalRPM
                             displayFrameRate = animationManager.originalFPS
@@ -417,46 +458,49 @@ struct TopControlPanel: View {
                             displayFrameRate = preset.1
                         }
                     }
-                    .font(.custom("Noteworthy", size: 32))
+                    .font(.custom("Noteworthy", size: 32 * DeviceScaling.scaleFactor))
                     .foregroundColor(.white)
                     .bold()
                     .animatedSpindigoGlow(animationManager.isAnimating)
                 }
             }
-
-            HStack(spacing: 12) {
-                Text("Speed: \(Int(spinRPM)) RPM")
-                    .foregroundColor(.white)
-                    .font(.title3)
-                    .frame(width: 150, alignment: .leading)
-
-                Slider(value: Binding(
-                    get: { spinRPM },
-                    set: {
+            
+            if !DeviceInfo.isPhone {
+                HStack(spacing: 12 * DeviceScaling.scaleFactor) {
+                    Text("Speed: \(Int(spinRPM)) RPM")
+                        .foregroundColor(.white)
+                        .font(.system(size: 20 * DeviceScaling.scaleFactor))
+                        .frame(width: 170 * DeviceScaling.scaleFactor, alignment: .leading)
+                    
+                    Slider(value: Binding(
+                        get: { spinRPM },
+                        set: {
+                            cancelAnimation()
+                            spinRPM = $0
+                        }
+                    ), in: -240...240, step: 1)
+                    
+                    Button("–") {
                         cancelAnimation()
-                        spinRPM = $0
+                        spinRPM = max(spinRPM - 1, -240)
                     }
-                ), in: -240...240, step: 1)
-
-                Button("–") {
-                    cancelAnimation()
-                    spinRPM = max(spinRPM - 1, -240)
+                    .controlMiniButtonStyle()
+                    
+                    Button("+") {
+                        cancelAnimation()
+                        spinRPM = min(spinRPM + 1, 240)
+                    }
+                    .controlMiniButtonStyle()
                 }
-                .controlMiniButtonStyle()
-
-                Button("+") {
-                    cancelAnimation()
-                    spinRPM = min(spinRPM + 1, 240)
-                }
-                .controlMiniButtonStyle()
             }
-
-            HStack(spacing: 12) {
+            
+            if !DeviceInfo.isPhone {
+            HStack(spacing: 12 * DeviceScaling.scaleFactor) {
                 Text("Frame: \(displayFrameRate) fps")
                     .foregroundColor(.white)
-                    .font(.title3)
-                    .frame(width: 150, alignment: .leading)
-
+                    .font(.system(size: 20 * DeviceScaling.scaleFactor))
+                    .frame(width: 170 * DeviceScaling.scaleFactor, alignment: .leading)
+                
                 Slider(value: Binding(
                     get: { Double(displayFrameRate) },
                     set: {
@@ -467,13 +511,13 @@ struct TopControlPanel: View {
                         }
                     }
                 ), in: 1...120, step: 1)
-
+                
                 Button("–") {
                     cancelAnimation()
                     displayFrameRate = max(displayFrameRate - 1, 1)
                 }
                 .controlMiniButtonStyle()
-
+                
                 Button("+") {
                     cancelAnimation()
                     displayFrameRate = min(displayFrameRate + 1, 120)
@@ -481,9 +525,10 @@ struct TopControlPanel: View {
                 .controlMiniButtonStyle()
             }
         }
+        }
         .padding(.horizontal)
-        .padding(.top, 4)
-        .padding(.bottom, 6)
+        .padding(.top, 4 * DeviceScaling.scaleFactor)
+        .padding(.bottom, 6 * DeviceScaling.scaleFactor)
         .background(Color.darkIndigo)
     }
 }
@@ -535,10 +580,10 @@ struct AnimateButtonBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12 * DeviceScaling.scaleFactor)
+            .padding(.vertical, 6 * DeviceScaling.scaleFactor)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 10 * DeviceScaling.scaleFactor)
                     .fill(animate ? Color.spindigoAccent : Color.darkIndigo)
                     .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: animate)
             )
@@ -551,10 +596,10 @@ struct AnimateButtonBackground: ViewModifier {
 extension View {
     func animatedSpindigoGlow(_ active: Bool) -> some View {
         self
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 12 * DeviceScaling.scaleFactor)
+            .padding(.vertical, 6 * DeviceScaling.scaleFactor)
             .background(
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 10 * DeviceScaling.scaleFactor)
                     .fill(active ? Color.clear : Color.spindigoAccent)
                     .animation(active ? .easeInOut(duration: 1.75).repeatForever(autoreverses: true) : .default, value: active)
             )

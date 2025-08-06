@@ -14,7 +14,7 @@ struct CanvasDrawingArea: View {
     @Binding var fingerIsDown: Bool
     @Binding var fingerLocation: CGPoint?
     @Binding var currentTime: Date
-    @Binding var penIsEraser: Bool
+    @Binding var penEraser: Bool
 
     let penSize: CGFloat
     let penColor: Color
@@ -86,7 +86,7 @@ struct CanvasDrawingArea: View {
                                 }
                             }
                         }
-                        .stroke(penIsEraser ? Color.gray.opacity(0.5) : penColor.opacity(0.5), lineWidth: penSize)
+                        .stroke(penEraser ? Color.gray.opacity(0.5) : penColor.opacity(0.5), lineWidth: penSize)
                         .mask(
                             Circle()
                                 .frame(width: activeDiameter, height: activeDiameter)
