@@ -48,6 +48,7 @@ struct CanvasUndoRedo: ViewModifier {
                     }
                     canvasImage = redoImage
                 }
+
                 canUndo = !canvasHistory.isEmpty
                 canRedo = !redoStack.isEmpty
             }

@@ -9,7 +9,7 @@ import SwiftUI
 
 
 struct MainView: View {
-    @State private var penSize: CGFloat = 10.0
+    @State private var penSize: CGFloat = DeviceInfo.isPhone ? 5.0 : 10.0
     @State private var displayFrameRate = 30
     @State private var spinRPM = 36.0
     @State private var clearTrigger = false
@@ -32,7 +32,9 @@ struct MainView: View {
                 spinRPM: $spinRPM,
                 clearTrigger: $clearTrigger,
                 isActive: $isActive,
-                redoStack: $redoStack
+                redoStack: $redoStack,
+                redoTrigger: $redoTrigger,
+                undoTrigger: $undoTrigger
             )
         }
     }

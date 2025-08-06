@@ -14,6 +14,8 @@ struct ControlsView: View {
     @Binding var clearTrigger: Bool
     @Binding var isActive: Bool
     @Binding var redoStack: [UIImage]
+    @Binding var redoTrigger: Bool
+    @Binding var undoTrigger: Bool
     
 //    @State private var redoStack: [UIImage] = []
     
@@ -22,8 +24,6 @@ struct ControlsView: View {
     @State private var showPenOptionsSheet = false
     @State private var penColor: Color = .blue
     @State private var canvasBackgroundColor: Color = .white
-    @State private var undoTrigger = false
-    @State private var redoTrigger = false
     @State private var canUndo = false
     @State private var canRedo = false
     @State private var saveImageTrigger = false
@@ -95,7 +95,7 @@ struct ControlsView: View {
                                             .clipShape(Circle())
                                             .shadow(radius: 5 * DeviceScaling.scaleFactor)
                                     }
-                                    .disabled(redoStack.isEmpty)
+                                    .disabled(!canRedo)
                                     .accessibilityLabel("Redo last stroke")
                                 }
                             }
@@ -208,7 +208,7 @@ struct ControlsView: View {
                                                 .clipShape(Circle())
                                                 .shadow(radius: 5 * DeviceScaling.scaleFactor)
                                         }
-                                        .disabled(redoStack.isEmpty)
+                                        .disabled(!canRedo)
 
                                         Button {
                                             showPenOptionsSheet = true
