@@ -9,6 +9,14 @@
 	<key>CFBundleName</key>
 	<string>Spindigo
     </string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Spindigo needs your permission to save drawings to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Spindigo needs your permission to load drawings from your photo library.</string>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -17,11 +25,5 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Spindigo needs your permission to save drawings to your photo library.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Spindigo needs your permission to load drawings from your photo library.</string>
-    <key>UIRequiresFullScreen</key>
-    <true/>
 </dict>
 </plist>

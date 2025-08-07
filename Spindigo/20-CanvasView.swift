@@ -43,7 +43,6 @@ struct CanvasView: View {
     @State private var showPenOptionsSheet = false
     @State var selectedQuickPenColor: QuickPenColor? = nil
     
-    
 
 
     @Binding var displayFrameRate: Int
@@ -195,11 +194,12 @@ struct CanvasView: View {
                 canvasSize: canvasSize
             ))
         }
-        .sheet(isPresented: $showAbout) {
-            AboutSheet(isPresented: $showAbout)
-        }
+//        .sheet(isPresented: $showAbout) {
+//            AboutSheet()
+//        }
         .onChange(of: loadImageTrigger) { _, _ in
             showLoadImageAlert = true
+            loadImageTrigger = false
         }
 
         .alert("Load Image", isPresented: $showLoadImageAlert) {
@@ -396,7 +396,7 @@ struct CanvasView: View {
         Button(action: action) {
             Text(title)
                 .font(.custom("Noteworthy", size: 32 * DeviceScaling.scaleFactor))
-                .foregroundColor(.black)
+                .foregroundColor(.white)
                 .bold()
                 .multilineTextAlignment(.center)
                 .frame(width: 190 * DeviceScaling.scaleFactor,
@@ -415,6 +415,8 @@ struct TopControlPanel: View {
     @Binding var displayFrameRate: Int
     var cancelAnimation: () -> Void
     @Binding var animationManager: AnimationCycleManager
+    
+    @State private var showAboutSheet = false
 
     var body: some View {
         VStack(spacing: 8 * DeviceScaling.scaleFactor) {
@@ -426,6 +428,28 @@ struct TopControlPanel: View {
                     .padding(.top, -8)
                 
                 Spacer()
+                
+                // Info button
+                Button(action: {
+                    showAboutSheet = true
+                    print("Info button tapped")
+                }) {
+                    Text("i")
+                        .font(.custom("Noteworthy", size: 40 * DeviceScaling.scaleFactor))
+                        .bold()
+                        .foregroundColor(.white)
+                        .frame(width: 50 * DeviceScaling.scaleFactor, height: 50 * DeviceScaling.scaleFactor)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6 * DeviceScaling.scaleFactor)
+                                .fill(Color.blue.opacity(0.8))
+                        )
+                }
+                .padding(.top, 16 * DeviceScaling.scaleFactor) // align better with title text
+                .padding(.trailing, 20 * DeviceScaling.scaleFactor)
+                .sheet(isPresented: $showAboutSheet) {
+                    AboutSheet()
+                }
+
                 
                 HStack(spacing: 12 * DeviceScaling.scaleFactor) {
                     Button("Zero Spd") {
@@ -547,11 +571,11 @@ struct TopControlPanel: View {
 struct AnimationCycleManager {
     let presets: [(rpm: Double, fps: Int)] = [
         (240, 23),
-        (240, 24),
-        (240, 25),
         (140, 18),
-        (190, 22),
-        (103, 15)
+        (240, 24),
+        (103, 15),
+        (240, 25),
+        (190, 18),
     ]
     
     private(set) var originalRPM: Double = 0
