@@ -155,11 +155,11 @@ struct CanvasView: View {
                 canRedo = false
             }
             
-            .onChange(of: saveImageTrigger) { _, _ in
-                if let image = canvasImage {
-                    PhotoLibraryManager.saveImageToPhotos(image) { success in
-                        print("Save to photos: \(success)")
-                    }
+            .onChange(of: saveImageTrigger) { _, newValue in
+                guard newValue, let image = canvasImage else { return }
+                PhotoLibraryManager.saveImageToPhotos(image) { _ in
+                    // Reset the trigger so future taps will fire again
+                    DispatchQueue.main.async { saveImageTrigger = false }
                 }
             }
             

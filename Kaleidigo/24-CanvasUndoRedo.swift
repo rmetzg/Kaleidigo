@@ -52,16 +52,7 @@ struct CanvasUndoRedo: ViewModifier {
                 canUndo = !canvasHistory.isEmpty
                 canRedo = !redoStack.isEmpty
             }
-            .onChange(of: saveImageTrigger) { _, _ in
-                if let image = canvasImage {
-                    PhotoLibraryManager.saveImageToPhotos(image) { success in
-                        print("Save to photos: \(success)")
-                    }
-                }
-            }
-//            .onChange(of: loadImageTrigger) { _, _ in
-//                showPhotoPicker = true
-//            }
+            
             .sheet(isPresented: $showPhotoPicker) {
                 PhotoPicker(image: $photoPickerImage)
                     .onDisappear {

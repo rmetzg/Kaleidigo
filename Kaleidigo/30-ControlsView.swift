@@ -246,7 +246,7 @@ struct ControlsView: View {
             }
             .alert("Do you want to save the canvas image to Photos?", isPresented: $showSaveAlert) {
                 Button("Yes") {
-                    saveImageTrigger.toggle()
+                    saveImageTrigger = true
                 }
                 Button("No", role: .cancel) {}
             }
